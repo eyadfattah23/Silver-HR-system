@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'channels',
     'cloudinary_storage',
     'cloudinary',
+    'employees',
 ]
 
 MIDDLEWARE = [
@@ -196,6 +197,7 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+AUTH_USER_MODEL = "employees.Employee"
 
 # Djoser configuration for phone number authentication
 DJOSER = {
