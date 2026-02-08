@@ -60,7 +60,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware' 
+    'whitenoise.middleware.WhiteNoiseMiddleware'
 ]
 
 
@@ -82,7 +82,7 @@ ROOT_URLCONF = 'silver_hr_core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS':[BASE_DIR, os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [BASE_DIR, os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -164,7 +164,6 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
-
 # Cloudinary Configuration
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
@@ -212,16 +211,28 @@ DJOSER = {
 
     # Custom serializers - IMPORTANT for security!
     # Prevents users from setting is_staff, is_superuser, role via API
-"""     'SERIALIZERS': {
-        'user_create': 'users.serializers.CustomUserCreateSerializer',
-        'user': 'users.serializers.CustomUserSerializer',
-        'current_user': 'users.serializers.CustomUserSerializer',
-    }, """
+    'SERIALIZERS': {
+        'user_create': 'employees.serializers.EmployeeCreateSerializer',
+        'user': 'employees.serializers.EmployeeSerializer',
+        'current_user': 'employees.serializers.EmployeeSerializer',
+    },
 
     # Permissions
     'PERMISSIONS': {
+        # Anyone authenticated can view their own user info
         'user': ['rest_framework.permissions.IsAuthenticated'],
+
+        # Only admins can list users
         'user_list': ['rest_framework.permissions.IsAdminUser'],
+
+        # Only admins can create new users (no public registration)
+        'user_create': ['rest_framework.permissions.IsAdminUser'],
+
+        # Any authenticated user can change their own password
+        'set_password': ['rest_framework.permissions.IsAuthenticated'],
+
+        # Only admins can delete users
+        'user_delete': ['rest_framework.permissions.IsAdminUser'],
     },
 
     # Hide sensitive user IDs from non-admin users
