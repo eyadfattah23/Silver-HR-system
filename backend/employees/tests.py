@@ -297,13 +297,13 @@ class AdminEmployeeCreateTests(BaseTestCase):
             'identity_number': '30002011234567',
             'address': '123 Main St, Cairo',
             'location': 'https://maps.google.com/123',
-            'role': 'Developer',
+            'role': 'employee',
             'is_staff': False,
             'is_verified': True,
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['email'], 'full@example.com')
-        self.assertEqual(response.data['role'], 'Developer')
+        self.assertEqual(response.data['role'], 'employee')
 
     def test_employee_cannot_create_employee(self):
         """Test regular employee cannot create employees."""

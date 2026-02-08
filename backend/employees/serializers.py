@@ -33,17 +33,12 @@ class EmployeeCreateSerializer(UserCreateSerializer):
             'rest_of_name',
             'email',
             'date_joined',
-            'dob',
-            'gender',
             'identity_type',
             'identity_number',
             'address',
             'location',
             'role',
             'fingerprint_id',
-            'is_active',
-            'is_staff',
-            'is_verified',
         )
         read_only_fields = ('id',)
 
@@ -52,17 +47,20 @@ class EmployeeCreateSerializer(UserCreateSerializer):
         validate_egyptian_phone_number(value)
         return value
 
+    def validate_role(self, value):
+        """
+        Prevent setting role via registration.
+        """
+        if not value in ['employee']:
+            raise serializers.ValidationError(
+                ("Cannot assign admin or instructor role via registration"))
+        return value
+
     def validate_identity_number(self, value):
         """Validate identity number based on identity type."""
         identity_type = self.initial_data.get('identity_type')
         if identity_type == 'nid':
             validate_egyptian_national_id(value)
-        return value
-
-    def validate_email(self, value):
-        """Convert empty email to None to avoid unique constraint issues."""
-        if not value:
-            return None
         return value
 
     def validate(self, attrs):
@@ -86,15 +84,6 @@ class EmployeeCreateSerializer(UserCreateSerializer):
                 attrs['gender'] = extract_gender_from_nid(identity_number)
 
         return attrs
-
-    def create(self, validated_data):
-        """Create employee with password."""
-        password = validated_data.pop('password', None)
-        employee = Employee(**validated_data)
-        if password:
-            employee.set_password(password)
-        employee.save()
-        return employee
 
 
 class EmployeeSerializer(UserSerializer):

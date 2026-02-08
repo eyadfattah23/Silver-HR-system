@@ -134,25 +134,6 @@ def extract_gender_from_nid(nid):
     return 'male' if gender_digit % 2 == 1 else 'female'
 
 
-class NullableEmailField(models.EmailField):
-    """Custom EmailField that stores empty strings as NULL in the database.
-
-    This allows unique constraint to work properly with PostgreSQL,
-    which treats NULL values as distinct (unlike empty strings).
-    """
-
-    def get_prep_value(self, value):
-        """Convert empty strings to None before saving to database."""
-        value = super().get_prep_value(value)
-        if value == '':
-            return None
-        return value
-
-    def from_db_value(self, value, expression, connection):
-        """Return None for NULL values from database."""
-        return value
-
-
 class Employee(AbstractUser):
     """Custom User model that uses phone number as the primary login field.
     """
@@ -160,8 +141,7 @@ class Employee(AbstractUser):
     username = None
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    email = NullableEmailField(
-        unique=True, null=True, blank=True, default=None)
+    email = models.EmailField(unique=True, null=True, blank=True)
     first_name = models.CharField(max_length=30)
     rest_of_name = models.CharField(max_length=150)
 
@@ -202,7 +182,7 @@ class Employee(AbstractUser):
     # front end can split it into multiple fields if needed, front end only validates it, backend just stores it as text
     location = models.URLField(max_length=512, null=True, blank=True)
 
-    role = models.CharField(max_length=50, blank=True, null=True)  # later
+    role = models.CharField(max_length=50, default="employee")  # later
     # bio
     profile_picture = CloudinaryField(
         'profile_pictures', blank=True, null=True)
@@ -219,30 +199,14 @@ class Employee(AbstractUser):
 
     def clean(self):
         """Validate identity_number and extract dob/gender from Egyptian NID if applicable."""
-        super().clean()
 
         # Validate Egyptian National ID format if identity_type is 'nid'
         if self.identity_type == 'nid':
             validate_egyptian_national_id(self.identity_number)
 
-            # Extract date of birth from NID if not provided
-            if not self.dob:
-                extracted_dob = extract_dob_from_nid(self.identity_number)
-                if extracted_dob:
-                    self.dob = extracted_dob
-
-            # Extract gender from NID if not provided
-            if not self.gender:
-                extracted_gender = extract_gender_from_nid(
-                    self.identity_number)
-                if extracted_gender:
-                    self.gender = extracted_gender
-
     def save(self, *args, **kwargs):
         """Override save to ensure clean() is called and data is extracted."""
         # Convert empty email to None to allow multiple null values with unique constraint
-        if not self.email:
-            self.email = None
 
         # Extract data from NID before saving if identity_type is 'nid'
         if self.identity_type == 'nid' and self.identity_number:
@@ -258,10 +222,6 @@ class Employee(AbstractUser):
                     self.gender = extracted_gender
 
         # Skip unique validation for null email (PostgreSQL allows multiple NULLs)
-        if self.email is None:
-            self.full_clean(exclude=['email'])
-        else:
-            self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
