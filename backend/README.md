@@ -11,6 +11,8 @@ This project supports both **local development** and **Docker deployment**. Migr
 - [Project Structure](#project-structure-high-level)
 - [Quick Start (Local Development)](#-quick-start-local-development)
 - [Running with Docker](#-running-with-docker)
+- [API Documentation](#-api-documentation)
+- [Testing](#-testing)
 - [Migration Workflow](#-migration-workflow)
 
 
@@ -109,8 +111,92 @@ docker compose up --build
 | `makemigrations` | ✅ **Yes (required)** | ❌ Never |
 | `migrate` | ✅ Yes | ✅ Auto (entrypoint) |
 | `runserver` | ✅ Yes | ✅ Auto (entrypoint) |
-| `createsuperuser` | ✅ Yes | ✅ `docker compose exec backend python manage.py createsuperuser` |
+| `createsuperuser` | ✅ Yes | ✅ `docker compose exec silver-backend-web-app python manage.py createsuperuser` |
 | `test` | ✅ Yes | ✅ Yes |
+
+---
+
+## 📚 API Documentation
+
+For complete API reference, see **[docs/API.md](docs/API.md)**.
+
+### Quick Reference
+
+#### Authentication
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/auth/jwt/create/` | POST | Login (get JWT tokens) |
+| `/api/v1/auth/jwt/refresh/` | POST | Refresh access token |
+| `/api/v1/auth/users/set_password/` | POST | Change own password |
+
+#### Employee Self-Service
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/employees/me/` | GET | View own profile (read-only) |
+
+#### Admin Dashboard API
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/employees/` | GET | List all employees |
+| `/api/v1/employees/` | POST | Create new employee |
+| `/api/v1/employees/{id}/` | GET | Get employee details |
+| `/api/v1/employees/{id}/` | PATCH | Update employee |
+| `/api/v1/employees/{id}/` | DELETE | Deactivate employee |
+| `/api/v1/employees/{id}/activate/` | POST | Reactivate employee |
+| `/api/v1/employees/{id}/set-password/` | POST | Reset employee password |
+
+### Permission Summary
+
+| User Type | Can Do |
+|-----------|--------|
+| **Employee** | View own profile, change own password |
+| **Admin** | Full CRUD on all employees |
+
+---
+
+## 🧪 Testing
+
+### Run All Tests
+
+```bash
+# Local
+python manage.py test employees
+
+# Docker
+docker compose exec silver-backend-web-app python manage.py test employees
+
+# With verbosity
+python manage.py test employees -v 2
+```
+
+### Run Specific Tests
+
+```bash
+# Run a specific test class
+python manage.py test employees.tests.AuthenticationTests
+
+# Run a specific test method
+python manage.py test employees.tests.AuthenticationTests.test_login_with_valid_credentials
+```
+
+### Test Categories
+
+| Category | Description |
+|----------|-------------|
+| `AuthenticationTests` | JWT login, token refresh, invalid credentials |
+| `EmployeeMeViewTests` | Self-service profile viewing |
+| `EmployeePasswordChangeTests` | Password change functionality |
+| `AdminEmployeeListTests` | Admin listing employees |
+| `AdminEmployeeCreateTests` | Admin creating employees + validation |
+| `AdminEmployeeDetailTests` | Admin viewing employee details |
+| `AdminEmployeeUpdateTests` | Admin updating employees |
+| `AdminEmployeeDeleteTests` | Soft delete (deactivation) |
+| `AdminEmployeeActivateTests` | Reactivating employees |
+| `AdminSetPasswordTests` | Admin password reset |
+| `EmployeeModelTests` | Model validations, NID extraction |
+
+---
+
 ## Project Structure (High Level)
 
 ## 📦 Migration Workflow
