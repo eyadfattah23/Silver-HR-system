@@ -8,13 +8,13 @@ from .models import Employee
 
 class NullableEmailField(forms.EmailField):
     """Email field that treats empty values as None for unique constraint compatibility."""
-    
+
     def to_python(self, value):
         """Convert empty string to None before any validation."""
         if value in self.empty_values:
             return None
         return super().to_python(value)
-    
+
     def validate(self, value):
         """Skip validation for None values."""
         if value is None:
@@ -24,7 +24,7 @@ class NullableEmailField(forms.EmailField):
 
 class EmployeeCreationForm(UserCreationForm):
     """Custom form for creating new employees in admin."""
-    
+
     email = NullableEmailField(required=False)
 
     class Meta:
@@ -42,7 +42,7 @@ class EmployeeCreationForm(UserCreationForm):
 
 class EmployeeChangeForm(UserChangeForm):
     """Custom form for editing employees in admin."""
-    
+
     email = NullableEmailField(required=False)
 
     class Meta:
