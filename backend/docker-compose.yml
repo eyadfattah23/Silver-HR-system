@@ -1,40 +1,66 @@
+# Silver HR System - Docker Compose Configuration
+# Uses unique names to avoid conflicts with other Docker projects
+
 services:
- db:
-   image: postgres:17
-   environment:
-     POSTGRES_DB: ${DATABASE_NAME}
-     POSTGRES_USER: ${DATABASE_USERNAME}
-     POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-   ports:
-     - "5432:5432"
-   volumes:
-     - postgres_data:/var/lib/postgresql/data
-   env_file:
-     - .env
-
-
- silver-backend-web-app:
-    build: .
-    container_name: silver-backend
-    ports:
-        - "8000:8000"
-    depends_on:
-        - db
-    volumes:
-        - .:/app
+  silver-db:
+    image: postgres:17
+    container_name: silver-hr-postgres
     environment:
-        DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
-        DEBUG: ${DEBUG}
-        DJANGO_LOGLEVEL: ${DJANGO_LOGLEVEL}
-        DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
-        DATABASE_ENGINE: ${DATABASE_ENGINE}
-        DATABASE_NAME: ${DATABASE_NAME}
-        DATABASE_USERNAME: ${DATABASE_USERNAME}
-
-        DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-        DATABASE_HOST: ${DATABASE_HOST}
-        DATABASE_PORT: ${DATABASE_PORT}
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - "5433:5432"  # Using 5433 to avoid conflicts with other postgres instances
+    volumes:
+      - silver_hr_postgres_data:/var/lib/postgresql/data
     env_file:
-        - .env
+      - .env
+    networks:
+      - silver-hr-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  silver-backend-web-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: silver-hr-backend:latest
+    container_name: silver-hr-backend
+    ports:
+      - "8001:8000"  # Using 8001 to avoid conflicts with other Django apps
+    depends_on:
+      silver-db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - silver_hr_static:/app/staticfiles
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DEBUG: ${DEBUG}
+      DJANGO_LOGLEVEL: ${DJANGO_LOGLEVEL}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+      DATABASE_ENGINE: ${DATABASE_ENGINE}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_HOST: silver-db
+      DATABASE_PORT: 5432
+    env_file:
+      - .env
+    networks:
+      - silver-hr-network
+    restart: unless-stopped
+
+networks:
+  silver-hr-network:
+    name: silver-hr-network
+    driver: bridge
+
 volumes:
-  postgres_data:
+  silver_hr_postgres_data:
+    name: silver_hr_postgres_data
+  silver_hr_static:
+    name: silver_hr_static
