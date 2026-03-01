@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'channels',
     'cloudinary_storage',
     'cloudinary',
+    'core',
     'employees',
 ]
 
