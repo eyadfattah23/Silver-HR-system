@@ -30,4 +30,6 @@ python3 manage.py migrate --noinput
 
 # Start server (Daphne for ASGI/WebSocket support)
 echo "Starting server..."
-exec daphne -b 0.0.0.0 -p 8000 silver_hr_core.asgi:application
+exec python3 manage.py runserver 0.0.0.0:8000
+
+# exec daphne -b 0.0.0.0 -p 8000 silver_hr_core.asgi:application
