@@ -1,0 +1,708 @@
+// HR System Database Diagram - Documents & Permissions Module
+// Tool: dbdiagram.io (free) - https://dbdiagram.io
+// Copy this code and paste it into dbdiagram.io to visualize
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+Enum gender {
+  male
+  female
+}
+
+Enum military_status {
+  temporary_exemption
+  permanent_exemption
+  evasion
+  postponed
+  completed
+  not_applicable // for females
+  other
+}
+
+Enum marital_status {
+  single
+  married
+}
+
+Enum employment_type {
+  full_time
+  part_time
+  contractor
+  intern
+}
+
+Enum employment_state {
+  active
+  suspended
+  terminated
+  on_leave
+}
+
+Enum document_format {
+  pdf
+  jpg
+  png
+  heif
+}
+
+Enum http_method {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+  OPTIONS
+  HEAD
+}
+
+// =============================================================================
+// LOCATION HIERARCHY: City -> Branch -> Department
+// =============================================================================
+
+Table cities {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(100) [not null, unique, note: 'City name in Arabic']
+  code varchar(10) [not null, unique, note: 'Short code for fingerprint ID, e.g., "Ca" for Cairo, "Is" for Ismailia']
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  note: 'Cities where branches are located. Used for HR jurisdiction.'
+}
+
+Table branches {
+  id uuid [pk, default: `gen_random_uuid()`]
+  city_id uuid [not null, ref: > cities.id]
+  name varchar(150) [not null, note: 'Branch name in Arabic']
+  address text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    (city_id, name) [unique, note: 'Unique branch name per city']
+  }
+  
+  note: 'Physical branch locations within a city'
+}
+
+Table departments {
+  id uuid [pk, default: `gen_random_uuid()`]
+  branch_id uuid [not null, ref: > branches.id]
+  name varchar(150) [not null, note: 'Department name in Arabic']
+  code varchar(10) [not null, note: 'Short code for fingerprint ID, e.g., "IT", "CC" for Call Center']
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    (branch_id, name) [unique, note: 'Unique department name per branch']
+    (branch_id, code) [unique, note: 'Unique department code per branch']
+  }
+  
+  note: 'Departments within branches. Cannot be nested.'
+}
+
+// =============================================================================
+// EMPLOYEE CORE
+// =============================================================================
+
+Table employees {
+  id uuid [pk, default: `gen_random_uuid()`]
+  
+  // Unique identifiers
+  phone_number varchar(13) [not null, unique, note: 'Egyptian phone with +20 prefix: +201xxxxxxxxx']
+  fingerprint_id varchar(20) [unique, note: 'Format: FP{CityCode}{DeptCode}{Gender}{DeviceID}, e.g., FPCaITF138']
+  national_id varchar(14) [unique, note: 'Egyptian National ID (14 digits)']
+  
+  // Personal info (Arabic names)
+  first_name varchar(50) [not null, note: 'First name in Arabic']
+  second_name varchar(50) [not null, note: 'Father name in Arabic']
+  third_name varchar(50) [not null, note: 'Grandfather name in Arabic']
+  fourth_name varchar(50) [not null, note: 'Family name in Arabic']
+  
+  date_of_birth date [not null]
+  gender gender [not null]
+  address text [note: 'Optional residential address']
+  marital_status marital_status [default: 'single']
+  military_status military_status [not null]
+  
+  // Employment info
+  department_id uuid [not null, ref: > departments.id]
+  job_title_id uuid [not null, ref: > job_titles.id]
+  employment_type employment_type [not null, default: 'full_time']
+  employment_state employment_state [not null, default: 'active']
+  hire_date date [not null]
+  
+  // Current salary (latest)
+  current_salary decimal(12,2) [not null, default: 0]
+  
+  // Auth
+  password_hash varchar(255) [not null]
+  
+  // Attendance policy exemption
+  is_attendance_exempt boolean [default: false, note: 'If true, attendance policies do not apply']
+  
+  // Notes
+  notes text
+  
+  // Timestamps
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by uuid [ref: > employees.id, note: 'Who created this record']
+  updated_by uuid [ref: > employees.id, note: 'Who last updated this record']
+  
+  indexes {
+    phone_number
+    fingerprint_id
+    national_id
+    department_id
+    employment_state
+    (department_id, employment_state)
+  }
+  
+  note: 'Core employee table. Phone number (+20xxxxxxxxxx) is the unique identifier.'
+}
+
+Table job_titles {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(100) [not null, unique, note: 'Job title in Arabic']
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  note: 'Lookup table for job titles'
+}
+
+// =============================================================================
+// TERMINATION MANAGEMENT
+// =============================================================================
+
+Table termination_types {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(100) [not null, unique, note: 'e.g., Resignation, Layoff, End of Contract, Retirement']
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  note: 'Flexible termination type lookup table (CRUD enabled)'
+}
+
+Table terminations {
+  id uuid [pk, default: `gen_random_uuid()`]
+  employee_id uuid [not null, ref: > employees.id]
+  termination_type_id uuid [not null, ref: > termination_types.id]
+  termination_date date [not null]
+  reason text [note: 'Free text termination reason']
+  is_cancelled boolean [default: false, note: 'True if termination was reversed']
+  cancelled_at timestamp
+  cancelled_by uuid [ref: > employees.id]
+  cancellation_reason text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  created_by uuid [not null, ref: > employees.id]
+  updated_by uuid [ref: > employees.id]
+  
+  indexes {
+    employee_id
+    termination_date
+    is_cancelled
+  }
+  
+  note: 'Employee termination records. Can be cancelled/reversed.'
+}
+
+// =============================================================================
+// SALARY & PROMOTION HISTORY
+// =============================================================================
+
+Table salary_history {
+  id uuid [pk, default: `gen_random_uuid()`]
+  employee_id uuid [not null, ref: > employees.id]
+  previous_salary decimal(12,2)
+  new_salary decimal(12,2) [not null]
+  effective_date date [not null]
+  reason text
+  approved_by uuid [ref: > employees.id, note: 'Nullable - who approved the change']
+  supporting_document_id uuid [ref: > documents.id, note: 'Nullable - supporting document']
+  created_at timestamp [default: `now()`]
+  created_by uuid [not null, ref: > employees.id]
+  
+  indexes {
+    employee_id
+    effective_date
+    (employee_id, effective_date)
+  }
+  
+  note: 'Track all salary changes with exact effective dates'
+}
+
+Table promotion_history {
+  id uuid [pk, default: `gen_random_uuid()`]
+  employee_id uuid [not null, ref: > employees.id]
+  previous_job_title_id uuid [ref: > job_titles.id]
+  new_job_title_id uuid [not null, ref: > job_titles.id]
+  previous_department_id uuid [ref: > departments.id]
+  new_department_id uuid [ref: > departments.id]
+  effective_date date [not null]
+  reason text
+  approved_by uuid [ref: > employees.id, note: 'Nullable - who approved']
+  supporting_document_id uuid [ref: > documents.id, note: 'Nullable - supporting document']
+  created_at timestamp [default: `now()`]
+  created_by uuid [not null, ref: > employees.id]
+  
+  indexes {
+    employee_id
+    effective_date
+  }
+  
+  note: 'Track promotions and role changes with exact effective dates'
+}
+
+// =============================================================================
+// DOCUMENTS SYSTEM
+// =============================================================================
+
+Table document_types {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(100) [not null, unique, note: 'e.g., Military Certificate, NID Front, NID Back, Insurance Print, Work Stub, Graduation Certificate, Birth Certificate']
+  description text
+  is_required boolean [default: false, note: 'If this document type is required for all employees']
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  note: 'Flexible document type lookup table (CRUD enabled)'
+}
+
+Table documents {
+  id uuid [pk, default: `gen_random_uuid()`]
+  employee_id uuid [not null, ref: > employees.id]
+  document_type_id uuid [not null, ref: > document_types.id]
+  
+  // File info
+  file_name varchar(255) [not null]
+  file_path varchar(500) [not null, note: 'Storage path/URL']
+  file_format document_format [not null]
+  file_size_bytes bigint
+  
+  // Metadata
+  expiration_date date [note: 'Document expiration date, determined by uploader']
+  notes text
+  
+  // Timestamps
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  uploaded_by uuid [not null, ref: > employees.id, note: 'HR or Super Admin who uploaded']
+  updated_by uuid [ref: > employees.id]
+  
+  indexes {
+    employee_id
+    document_type_id
+    expiration_date
+    (employee_id, document_type_id)
+  }
+  
+  note: 'Employee documents. Only HR and Super Admin can create/edit. Employees can view their own.'
+}
+
+// =============================================================================
+// ROLES & PERMISSIONS SYSTEM
+// =============================================================================
+
+Table roles {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(50) [not null, unique, note: 'super_admin, city_hr, department_supervisor, department_lead, employee']
+  display_name varchar(100) [not null, note: 'Human readable name in Arabic']
+  description text
+  hierarchy_level int [not null, note: '1=highest (super_admin), 5=lowest (employee)']
+  is_system_role boolean [default: false, note: 'True for default roles that cannot be deleted']
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    hierarchy_level
+  }
+  
+  note: 'System roles with hierarchy levels. Lower number = higher authority.'
+}
+
+Table permissions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  code varchar(100) [not null, unique, note: 'e.g., employees.create, employees.delete, documents.upload']
+  name varchar(150) [not null, note: 'Human readable name']
+  description text
+  resource varchar(50) [not null, note: 'e.g., employees, documents, attendance, salary']
+  action varchar(50) [not null, note: 'e.g., create, read, update, delete, approve, delegate']
+  is_delegatable boolean [default: false, note: 'Can this permission be delegated to others?']
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    code
+    resource
+    (resource, action)
+  }
+  
+  note: 'Granular permissions. is_delegatable controls if permission can be given to others.'
+}
+
+// Role-Permission mapping (default permissions per role)
+Table role_permissions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  role_id uuid [not null, ref: > roles.id]
+  permission_id uuid [not null, ref: > permissions.id]
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    (role_id, permission_id) [unique]
+  }
+  
+  note: 'Maps default permissions to roles'
+}
+
+// Employee-Role assignment
+Table employee_roles {
+  id uuid [pk, default: `gen_random_uuid()`]
+  employee_id uuid [not null, ref: > employees.id]
+  role_id uuid [not null, ref: > roles.id]
+  
+  // Scope limiters (null means no restriction at that level)
+  city_id uuid [ref: > cities.id, note: 'If set, role applies only to this city']
+  branch_id uuid [ref: > branches.id, note: 'If set, role applies only to this branch']
+  department_id uuid [ref: > departments.id, note: 'If set, role applies only to this department']
+  
+  is_active boolean [default: true]
+  granted_by uuid [not null, ref: > employees.id]
+  granted_at timestamp [default: `now()`]
+  revoked_at timestamp
+  revoked_by uuid [ref: > employees.id]
+  
+  indexes {
+    employee_id
+    role_id
+    (employee_id, role_id, city_id, branch_id, department_id) [unique]
+  }
+  
+  note: 'Assigns roles to employees with optional scope (city/branch/department)'
+}
+
+// Extra permissions granted to specific employees (beyond their role)
+Table employee_extra_permissions {
+  id uuid [pk, default: `gen_random_uuid()`]
+  employee_id uuid [not null, ref: > employees.id]
+  permission_id uuid [not null, ref: > permissions.id]
+  
+  // Scope limiters
+  city_id uuid [ref: > cities.id]
+  branch_id uuid [ref: > branches.id]
+  department_id uuid [ref: > departments.id]
+  
+  reason text [note: 'Why was this extra permission granted?']
+  is_active boolean [default: true]
+  granted_by uuid [not null, ref: > employees.id]
+  granted_at timestamp [default: `now()`]
+  expires_at timestamp [note: 'Optional expiration for temporary permissions']
+  revoked_at timestamp
+  revoked_by uuid [ref: > employees.id]
+  
+  indexes {
+    employee_id
+    permission_id
+    (employee_id, permission_id, city_id, branch_id, department_id) [unique]
+  }
+  
+  note: 'Extra permissions granted to employees beyond their default role permissions'
+}
+
+// Permission delegation (give my permission to others)
+Table permission_delegations {
+  id uuid [pk, default: `gen_random_uuid()`]
+  delegator_id uuid [not null, ref: > employees.id, note: 'Employee giving the permission']
+  delegate_id uuid [not null, ref: > employees.id, note: 'Employee receiving the permission']
+  permission_id uuid [not null, ref: > permissions.id]
+  
+  // Scope limiters (inherited from delegator or more restricted)
+  city_id uuid [ref: > cities.id]
+  branch_id uuid [ref: > branches.id]
+  department_id uuid [ref: > departments.id]
+  
+  reason text
+  is_active boolean [default: true]
+  delegated_at timestamp [default: `now()`]
+  expires_at timestamp [note: 'Optional expiration']
+  revoked_at timestamp
+  
+  indexes {
+    delegator_id
+    delegate_id
+    permission_id
+    (delegator_id, delegate_id, permission_id) [unique]
+  }
+  
+  note: 'Permission delegation - requires delegator to have "can_delegate" permission and the permission must be delegatable'
+}
+
+// Special permission: ability to delegate permissions
+Table delegation_rights {
+  id uuid [pk, default: `gen_random_uuid()`]
+  employee_id uuid [not null, ref: > employees.id]
+  can_delegate_permission_id uuid [not null, ref: > permissions.id, note: 'Which permission can this employee delegate?']
+  is_active boolean [default: true]
+  granted_by uuid [not null, ref: > employees.id]
+  granted_at timestamp [default: `now()`]
+  
+  indexes {
+    (employee_id, can_delegate_permission_id) [unique]
+  }
+  
+  note: 'Controls which permissions an employee can delegate to others'
+}
+
+// =============================================================================
+// SALARY SYSTEM
+// =============================================================================
+
+Enum salary_sheet_status {
+  draft
+  pending_review
+  pending_approval
+  revision_needed
+  approved
+  paid
+}
+
+Enum salary_period_status {
+  open
+  closed
+  locked
+}
+
+Enum adjustment_category {
+  addition
+  deduction
+}
+
+Enum calculation_base {
+  fixed
+  percentage_of_base
+  percentage_of_gross
+}
+
+Table salary_periods {
+  id uuid [pk, default: `gen_random_uuid()`]
+  year int [not null]
+  month int [not null, note: '1-12']
+  name varchar(50) [note: 'e.g., "February 2026"']
+  start_date date [not null]
+  end_date date [not null]
+  status salary_period_status [default: 'open']
+  created_at timestamp [default: `now()`]
+  closed_at timestamp
+  closed_by uuid [ref: > employees.id]
+  
+  indexes {
+    (year, month) [unique]
+  }
+  
+  note: 'Monthly salary periods for payroll cycles'
+}
+
+Table monthly_salary_sheets {
+  id uuid [pk, default: `gen_random_uuid()`]
+  employee_id uuid [not null, ref: > employees.id]
+  salary_period_id uuid [not null, ref: > salary_periods.id]
+  
+  // Base salary (copied from employee at time of generation)
+  base_salary decimal(12,2) [not null]
+  
+  // Additions - KPI
+  kpi_amount decimal(12,2) [default: 0]
+  kpi_percentage decimal(5,2) [note: 'If calculated as % of base']
+  kpi_notes text
+  
+  // Additions - Overtime
+  overtime_hours decimal(6,2) [default: 0]
+  overtime_rate decimal(10,2) [note: 'Rate per hour']
+  overtime_amount decimal(12,2) [default: 0]
+  overtime_percentage decimal(5,2) [note: 'Or as % of base salary']
+  overtime_notes text
+  
+  // Additions - Bonus
+  bonus_amount decimal(12,2) [default: 0]
+  bonus_notes text
+  
+  // Deductions - Late
+  late_penalty_amount decimal(12,2) [default: 0]
+  late_penalty_notes text
+  late_count int [default: 0, note: 'Number of late arrivals']
+  
+  // Deductions - Absence
+  absence_penalty_amount decimal(12,2) [default: 0]
+  absence_penalty_notes text
+  absence_days decimal(4,2) [default: 0]
+  
+  // Deductions - Other
+  other_deductions_amount decimal(12,2) [default: 0]
+  other_deductions_notes text
+  
+  // Calculated totals
+  total_additions decimal(12,2) [default: 0]
+  total_deductions decimal(12,2) [default: 0]
+  net_salary decimal(12,2) [not null]
+  
+  // Workflow status
+  status salary_sheet_status [default: 'draft']
+  
+  // Audit - who did what
+  kpi_set_by uuid [ref: > employees.id]
+  kpi_set_at timestamp
+  reviewed_by uuid [ref: > employees.id]
+  reviewed_at timestamp
+  approved_by uuid [ref: > employees.id]
+  approved_at timestamp
+  revision_reason text
+  
+  notes text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    (employee_id, salary_period_id) [unique]
+    employee_id
+    salary_period_id
+    status
+  }
+  
+  note: 'Monthly salary calculation sheet per employee'
+}
+
+Table salary_adjustment_types {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(100) [not null, unique, note: 'e.g., Project Bonus, Training Allowance, Advance Deduction']
+  category adjustment_category [not null]
+  description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  note: 'Flexible adjustment types for itemized additions/deductions'
+}
+
+Table salary_adjustments {
+  id uuid [pk, default: `gen_random_uuid()`]
+  salary_sheet_id uuid [not null, ref: > monthly_salary_sheets.id]
+  adjustment_type_id uuid [not null, ref: > salary_adjustment_types.id]
+  
+  amount decimal(12,2) [not null]
+  percentage decimal(5,2) [note: 'If calculated as percentage']
+  calculation_base calculation_base [default: 'fixed']
+  
+  reason text
+  created_by uuid [not null, ref: > employees.id]
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    salary_sheet_id
+  }
+  
+  note: 'Individual itemized adjustments for detailed tracking'
+}
+
+Table attendance_policies {
+  id uuid [pk, default: `gen_random_uuid()`]
+  department_id uuid [ref: > departments.id, note: 'Null for global default policy']
+  
+  // Grace periods
+  late_grace_minutes int [default: 15]
+  
+  // Penalties
+  late_penalty_per_instance decimal(10,2) [default: 50]
+  absence_penalty_per_day decimal(10,2) [default: 0]
+  absence_penalty_percentage decimal(5,2) [note: '% of daily salary']
+  
+  // Overtime rates
+  overtime_rate_per_hour decimal(10,2)
+  overtime_rate_percentage decimal(5,2) [default: 150, note: '150% of hourly rate']
+  
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    department_id [unique]
+  }
+  
+  note: 'Attendance and salary policies per department'
+}
+
+// =============================================================================
+// API AUDIT LOGS
+// =============================================================================
+
+Table api_audit_logs {
+  id uuid [pk, default: `gen_random_uuid()`]
+  
+  // Who
+  employee_id uuid [ref: > employees.id, note: 'Null if unauthenticated request']
+  ip_address varchar(45) [note: 'IPv4 or IPv6']
+  user_agent text
+  
+  // What
+  http_method http_method [not null]
+  endpoint varchar(500) [not null]
+  request_body text [note: 'JSON string, sensitive data should be masked']
+  request_headers text [note: 'JSON string, sensitive headers should be masked']
+  query_params text [note: 'JSON string']
+  
+  // Result
+  response_status_code int [not null]
+  response_body text [note: 'JSON string, may be truncated for large responses']
+  
+  // Timing
+  request_timestamp timestamp [not null, default: `now()`]
+  response_timestamp timestamp
+  duration_ms int [note: 'Request processing time in milliseconds']
+  
+  // Context
+  resource_type varchar(50) [note: 'e.g., employees, documents, attendance']
+  resource_id uuid [note: 'ID of the affected resource']
+  action varchar(50) [note: 'e.g., create, update, delete, login']
+  
+  indexes {
+    employee_id
+    endpoint
+    request_timestamp
+    resource_type
+    (employee_id, request_timestamp)
+    (resource_type, resource_id)
+  }
+  
+  note: 'API-level audit logs for all requests. Stored for compliance and debugging.'
+}
+
+// =============================================================================
+// SEED DATA REFERENCE (for initial setup)
+// =============================================================================
+
+// Default Roles (hierarchy_level: 1=highest, 5=lowest):
+// 1. super_admin (level 1) - Full system access
+// 2. city_hr (level 2) - City-wide HR operations
+// 3. department_supervisor (level 3) - Department management
+// 4. department_lead (level 4) - Team assistance
+// 5. employee (level 5) - Own data only
+
+// Core Permissions:
+// employees.create, employees.read, employees.update, employees.delete, employees.read_own
+// documents.upload, documents.read, documents.update, documents.delete, documents.read_own
+// attendance.create, attendance.read, attendance.update, attendance.approve, attendance.read_own
+// salary.read, salary.update, salary.read_own
+// reports.generate, reports.read_department, reports.read_own
+// permissions.delegate - special permission to delegate own permissions
