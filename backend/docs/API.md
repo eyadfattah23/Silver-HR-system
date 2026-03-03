@@ -9,7 +9,8 @@ Complete API reference for the Silver HR System backend.
 - [API Endpoints](#api-endpoints)
   - [Authentication Endpoints](#authentication-endpoints)
   - [Employee Self-Service](#employee-self-service)
-  - [Admin Dashboard API](#admin-dashboard-api)
+  - [Admin Employee Management](#admin-employee-management)
+  - [JobTitle Management](#jobtitle-management)
 - [Data Models](#data-models)
 - [Error Handling](#error-handling)
 - [Examples](#examples)
@@ -38,7 +39,7 @@ Authorization: JWT <access_token>
 |------|-------------|
 | **Unauthenticated** | Login only |
 | **Employee** | View own profile, change own password |
-| **Admin** (`is_staff=True`) | Full CRUD on all employees |
+| **Admin** (`is_staff=True`) | Full CRUD on all employees, job titles |
 
 ---
 
@@ -116,24 +117,36 @@ Retrieve the current authenticated employee's profile.
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "phone_number1": "+201000000002",
     "phone_number2": null,
-    "first_name": "Ahmed",
-    "rest_of_name": "Mohamed Hassan",
-    "email": "ahmed@example.com",
+    "fingerprint_id": null,
+    "national_id": "29506151234528",
+    "first_name": "فاطمة",
+    "second_name": "أحمد",
+    "third_name": "محمود",
+    "fourth_name": "سعيد",
+    "full_name": "فاطمة أحمد محمود سعيد",
+    "date_of_birth": "1995-06-15",
+    "gender": "female",
+    "address": null,
+    "marital_status": "single",
+    "military_status": "not_applicable",
+    "department": null,
+    "job_title": "550e8400-e29b-41d4-a716-446655440001",
+    "job_title_detail": {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "name": "Software Engineer"
+    },
+    "employment_type": "full_time",
+    "employment_state": "active",
+    "hire_date": "2024-06-01",
+    "current_salary": "10000.00",
+    "is_attendance_exempt": false,
+    "notes": null,
     "is_active": true,
     "is_staff": false,
-    "is_verified": true,
-    "date_joined": "2024-06-01",
-    "dob": "1995-03-15",
-    "gender": "male",
-    "identity_type": "nid",
-    "identity_number": "29503151234567",
-    "address": "123 Main St, Cairo",
-    "location": "https://maps.google.com/...",
-    "profile_picture": "https://res.cloudinary.com/...",
-    "role": "Developer",
-    "fingerprint_id": "FP001",
     "created_at": "2024-06-01T10:30:00Z",
-    "updated_at": "2024-06-15T14:20:00Z"
+    "updated_at": "2024-06-15T14:20:00Z",
+    "created_by": null,
+    "updated_by": null
 }
 ```
 
@@ -174,7 +187,7 @@ Change the current authenticated employee's password.
 
 ---
 
-### Admin Dashboard API
+### Admin Employee Management
 
 All admin endpoints require `is_staff=True`.
 
@@ -184,33 +197,20 @@ All admin endpoints require `is_staff=True`.
 
 **Authentication:** Admin required
 
-**Query Parameters:** (optional)
-- Pagination is automatic
-
 **Success Response (200 OK):**
 ```json
 [
     {
         "id": "550e8400-e29b-41d4-a716-446655440000",
         "phone_number1": "+201000000002",
-        "first_name": "Ahmed",
-        "rest_of_name": "Mohamed Hassan",
-        "email": "ahmed@example.com",
-        "role": "Developer",
+        "first_name": "فاطمة",
+        "fourth_name": "سعيد",
+        "full_name": "فاطمة أحمد محمود سعيد",
+        "job_title_name": "Software Engineer",
+        "employment_state": "active",
         "is_active": true,
         "is_staff": false,
-        "date_joined": "2024-06-01"
-    },
-    {
-        "id": "550e8400-e29b-41d4-a716-446655440001",
-        "phone_number1": "+201000000003",
-        "first_name": "Sara",
-        "rest_of_name": "Ali Ibrahim",
-        "email": null,
-        "role": "Designer",
-        "is_active": true,
-        "is_staff": false,
-        "date_joined": "2024-07-01"
+        "hire_date": "2024-06-01"
     }
 ]
 ```
@@ -228,61 +228,49 @@ All admin endpoints require `is_staff=True`.
     "phone_number2": "+201111111112",
     "password": "SecurePass123!",
     "re_password": "SecurePass123!",
-    "first_name": "New",
-    "rest_of_name": "Employee Name",
-    "email": "new@example.com",
-    "date_joined": "2025-01-15",
-    "identity_type": "nid",
-    "identity_number": "30001151234567",
-    "address": "456 Street, Giza",
-    "location": "https://maps.google.com/...",
-    "role": "Accountant",
-    "fingerprint_id": "FP002",
-    "is_active": true,
-    "is_staff": false,
-    "is_verified": false
+    "first_name": "أحمد",
+    "second_name": "محمد",
+    "third_name": "علي",
+    "fourth_name": "حسن",
+    "date_of_birth": "1995-01-15",
+    "gender": "male",
+    "military_status": "completed",
+    "hire_date": "2025-01-15",
+    "national_id": "29501151234517",
+    "fingerprint_id": "FPCaITM001",
+    "address": "123 Main St, Cairo",
+    "marital_status": "single",
+    "employment_type": "full_time",
+    "employment_state": "active",
+    "current_salary": "15000.00",
+    "is_attendance_exempt": false,
+    "notes": "New employee notes",
+    "job_title": "550e8400-e29b-41d4-a716-446655440001",
+    "department": "550e8400-e29b-41d4-a716-446655440002"
 }
 ```
 
 **Required Fields:**
-- `phone_number1`
+- `phone_number1` (Egyptian +20 format)
 - `password`
 - `re_password`
 - `first_name`
-- `rest_of_name`
-- `date_joined`
-- `identity_type`
-- `identity_number`
+- `second_name`
+- `third_name`
+- `fourth_name`
+- `date_of_birth`
+- `gender`
+- `military_status` (required for males, auto-set to `not_applicable` for females)
+- `hire_date`
 
-**Success Response (201 Created):**
-```json
-{
-    "id": "550e8400-e29b-41d4-a716-446655440002",
-    "phone_number1": "+201111111111",
-    "phone_number2": "+201111111112",
-    "first_name": "New",
-    "rest_of_name": "Employee Name",
-    "email": "new@example.com",
-    "date_joined": "2025-01-15",
-    "dob": "2000-01-15",
-    "gender": "male",
-    "identity_type": "nid",
-    "identity_number": "30001151234567",
-    "address": "456 Street, Giza",
-    "location": "https://maps.google.com/...",
-    "role": "Accountant",
-    "is_active": true,
-    "is_staff": false,
-    "is_verified": false
-}
-```
+**Success Response (201 Created):** Full employee object
 
 **Validation Errors (400):**
 ```json
 {
     "phone_number1": ["Phone number must be an Egyptian number starting with +20 country code."],
-    "identity_number": ["Egyptian National ID must be exactly 14 digits."],
-    "non_field_errors": ["The two password fields didn't match."]
+    "national_id": ["Egyptian National ID must be exactly 14 digits."],
+    "re_password": ["Passwords do not match."]
 }
 ```
 
@@ -310,9 +298,9 @@ All admin endpoints require `is_staff=True`.
 **Request Body (PATCH - partial update):**
 ```json
 {
-    "first_name": "Updated Name",
-    "role": "Senior Developer",
-    "is_verified": true
+    "first_name": "تحديث",
+    "current_salary": "20000.00",
+    "employment_state": "on_leave"
 }
 ```
 
@@ -396,6 +384,81 @@ Admin can reset any employee's password without knowing the current password.
 
 ---
 
+### JobTitle Management
+
+All JobTitle management endpoints require `is_staff=True`.
+
+#### List All Job Titles
+
+**Endpoint:** `GET /api/v1/employees/job-titles/`
+
+**Authentication:** Admin required
+
+**Success Response (200 OK):**
+```json
+[
+    {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "name": "Software Engineer",
+        "description": "Develops software applications",
+        "is_active": true,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+    }
+]
+```
+
+#### List Active Job Titles Only
+
+**Endpoint:** `GET /api/v1/employees/job-titles/active/`
+
+**Authentication:** Admin required
+
+**Success Response (200 OK):** Array of active job titles (same format as above)
+
+#### Create Job Title
+
+**Endpoint:** `POST /api/v1/employees/job-titles/`
+
+**Authentication:** Admin required
+
+**Request Body:**
+```json
+{
+    "name": "Senior Developer",
+    "description": "Senior software developer with 5+ years experience",
+    "is_active": true
+}
+```
+
+**Success Response (201 Created):** Created job title object
+
+#### Get Job Title Details
+
+**Endpoint:** `GET /api/v1/employees/job-titles/{id}/`
+
+**Authentication:** Admin required
+
+**Success Response (200 OK):** Job title object
+
+#### Update Job Title
+
+**Endpoint:** `PUT /api/v1/employees/job-titles/{id}/` or `PATCH /api/v1/employees/job-titles/{id}/`
+
+**Authentication:** Admin required
+
+**Request Body:**
+```json
+{
+    "description": "Updated description",
+    "is_active": false
+}
+```
+
+**Success Response (200 OK):** Updated job title object
+
+---
+
 ## Data Models
 
 ### Employee Model
@@ -405,40 +468,93 @@ Admin can reset any employee's password without knowing the current password.
 | `id` | UUID | Auto | Primary key |
 | `phone_number1` | String | Yes | Primary phone (Egyptian +20), unique, used for login |
 | `phone_number2` | String | No | Secondary phone number |
-| `first_name` | String | Yes | First name (max 30 chars) |
-| `rest_of_name` | String | Yes | Rest of name (max 150 chars) |
-| `email` | Email | No | Unique if provided |
-| `password` | String | Yes | Hashed password |
-| `date_joined` | Date | Yes | Employment start date |
-| `dob` | Date | No | Date of birth (auto-extracted from NID) |
-| `gender` | String | No | "male" or "female" (auto-extracted from NID) |
-| `identity_type` | String | Yes | "nid", "passport", "driving_license", "other" |
-| `identity_number` | String | Yes | Government ID number, unique |
-| `address` | Text | No | Full address |
-| `location` | URL | No | Google Maps or similar URL |
-| `profile_picture` | URL | No | Cloudinary image URL |
-| `role` | String | No | Job role/title |
-| `fingerprint_id` | String | No | Biometric ID |
-| `is_active` | Boolean | - | Default: true |
-| `is_staff` | Boolean | - | Admin access, default: false |
-| `is_superuser` | Boolean | - | Full permissions, default: false |
-| `is_verified` | Boolean | - | Account verified, default: false |
+| `fingerprint_id` | String | No | Biometric ID, unique. Format: FP{CityCode}{DeptCode}{Gender}{DeviceID} |
+| `national_id` | String | No | Egyptian National ID (14 digits), unique |
+| `first_name` | String | Yes | First name in Arabic (max 50 chars) |
+| `second_name` | String | Yes | Father name in Arabic (max 50 chars) |
+| `third_name` | String | Yes | Grandfather name in Arabic (max 50 chars) |
+| `fourth_name` | String | Yes | Family name in Arabic (max 50 chars) |
+| `full_name` | String | Read-only | Computed: all four name parts combined |
+| `date_of_birth` | Date | Yes | Date of birth (auto-extracted from NID if provided) |
+| `gender` | String | Yes | "male" or "female" (auto-extracted from NID if provided) |
+| `address` | Text | No | Residential address |
+| `marital_status` | String | No | "single" (default) or "married" |
+| `military_status` | String | Yes* | See Military Status values below. *Auto-set for females |
+| `department` | UUID | No | Reference to Department (core app) |
+| `job_title` | UUID | No | Reference to JobTitle |
+| `employment_type` | String | No | "full_time" (default), "part_time", "contractor", "intern" |
+| `employment_state` | String | No | "active" (default), "suspended", "terminated", "on_leave" |
+| `hire_date` | Date | Yes | Employment start date |
+| `current_salary` | Decimal | No | Current salary (default: 0) |
+| `is_attendance_exempt` | Boolean | No | If true, attendance policies do not apply |
+| `notes` | Text | No | Additional notes |
+| `is_active` | Boolean | Auto | Default: true |
+| `is_staff` | Boolean | Auto | Admin access, default: false |
+| `is_superuser` | Boolean | Auto | Full permissions, default: false |
 | `created_at` | DateTime | Auto | Record creation timestamp |
 | `updated_at` | DateTime | Auto | Last update timestamp |
+| `created_by` | UUID | Auto | Employee who created this record |
+| `updated_by` | UUID | Auto | Employee who last updated this record |
 | `last_login` | DateTime | Auto | Last successful login |
 
-### Identity Types
+### Gender Values
 
 | Value | Description |
 |-------|-------------|
-| `nid` | Egyptian National ID (14 digits) - auto-extracts DOB and gender |
-| `passport` | Passport number |
-| `driving_license` | Driving license number |
-| `other` | Other form of ID |
+| `male` | Male |
+| `female` | Female |
+
+### Military Status Values
+
+| Value | Description |
+|-------|-------------|
+| `temporary_exemption` | Temporary Exemption |
+| `permanent_exemption` | Permanent Exemption |
+| `evasion` | Evasion |
+| `postponed` | Postponed |
+| `completed` | Completed |
+| `not_applicable` | Not Applicable (auto-set for females) |
+| `other` | Other |
+
+### Marital Status Values
+
+| Value | Description |
+|-------|-------------|
+| `single` | Single (default) |
+| `married` | Married |
+
+### Employment Type Values
+
+| Value | Description |
+|-------|-------------|
+| `full_time` | Full Time (default) |
+| `part_time` | Part Time |
+| `contractor` | Contractor |
+| `intern` | Intern |
+
+### Employment State Values
+
+| Value | Description |
+|-------|-------------|
+| `active` | Active (default) |
+| `suspended` | Suspended |
+| `terminated` | Terminated |
+| `on_leave` | On Leave |
+
+### JobTitle Model
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | UUID | Auto | Primary key |
+| `name` | String | Yes | Job title name (max 100 chars), unique |
+| `description` | Text | No | Job description |
+| `is_active` | Boolean | No | Active status (default: true) |
+| `created_at` | DateTime | Auto | Record creation timestamp |
+| `updated_at` | DateTime | Auto | Last update timestamp |
 
 ### Egyptian National ID Format
 
-For `identity_type: "nid"`, the ID must be exactly 14 digits:
+Egyptian National ID must be exactly 14 digits:
 - **Digit 1:** Century (2 = 1900s, 3 = 2000s)
 - **Digits 2-3:** Birth year
 - **Digits 4-5:** Birth month
@@ -448,9 +564,20 @@ For `identity_type: "nid"`, the ID must be exactly 14 digits:
 - **Digit 13:** Gender (odd = male, even = female)
 - **Digit 14:** Check digit
 
-Example: `29503151234567`
+**Example:** `29503151234567`
 - Born: March 15, 1995
 - Gender: Male (7 is odd)
+
+When a valid National ID is provided, the system automatically extracts:
+- Date of birth
+- Gender
+
+### Egyptian Phone Number Format
+
+Egyptian phone numbers must:
+- Start with `+20` country code
+- Use valid mobile prefixes: 10, 11, 12, or 15
+- Be exactly 13 characters total (e.g., `+201012345678`)
 
 ---
 
@@ -535,12 +662,36 @@ curl -X POST http://localhost:8001/api/v1/employees/ \
     "phone_number1": "+201111111111",
     "password": "SecurePass123!",
     "re_password": "SecurePass123!",
-    "first_name": "Mohamed",
-    "rest_of_name": "Ahmed Ali",
-    "date_joined": "2025-02-01",
-    "identity_type": "nid",
-    "identity_number": "29503151234567",
-    "role": "Developer"
+    "first_name": "أحمد",
+    "second_name": "محمد",
+    "third_name": "علي",
+    "fourth_name": "حسن",
+    "date_of_birth": "1995-01-15",
+    "gender": "male",
+    "military_status": "completed",
+    "hire_date": "2025-02-01"
+  }'
+```
+
+### Admin: Create Female Employee (cURL)
+
+Military status is auto-set to `not_applicable` for females:
+
+```bash
+curl -X POST http://localhost:8001/api/v1/employees/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: JWT eyJ..." \
+  -d '{
+    "phone_number1": "+201122222222",
+    "password": "SecurePass123!",
+    "re_password": "SecurePass123!",
+    "first_name": "فاطمة",
+    "second_name": "أحمد",
+    "third_name": "محمود",
+    "fourth_name": "سعيد",
+    "date_of_birth": "1998-03-15",
+    "gender": "female",
+    "hire_date": "2025-03-01"
   }'
 ```
 
@@ -551,8 +702,21 @@ curl -X PATCH http://localhost:8001/api/v1/employees/550e8400-e29b-41d4-a716-446
   -H "Content-Type: application/json" \
   -H "Authorization: JWT eyJ..." \
   -d '{
-    "role": "Senior Developer",
-    "is_verified": true
+    "current_salary": "20000.00",
+    "employment_state": "on_leave"
+  }'
+```
+
+### Admin: Create Job Title (cURL)
+
+```bash
+curl -X POST http://localhost:8001/api/v1/employees/job-titles/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: JWT eyJ..." \
+  -d '{
+    "name": "مهندس برمجيات أول",
+    "description": "مطور برمجيات بخبرة 5 سنوات أو أكثر",
+    "is_active": true
   }'
 ```
 
@@ -585,11 +749,14 @@ docker compose exec silver-backend-web-app python manage.py test employees
 # With verbosity
 python manage.py test employees -v 2
 
+# Specific test module
+python manage.py test employees.tests.test_authentication
+
 # Specific test class
-python manage.py test employees.tests.AuthenticationTests
+python manage.py test employees.tests.test_authentication.AuthenticationTests
 
 # Specific test method
-python manage.py test employees.tests.AuthenticationTests.test_login_with_valid_credentials
+python manage.py test employees.tests.test_authentication.AuthenticationTests.test_login_with_valid_credentials
 ```
 
 ### Test Coverage
@@ -601,6 +768,7 @@ The test suite covers:
 - ✅ Admin employee update & delete
 - ✅ Admin employee activate/deactivate
 - ✅ Admin password reset
+- ✅ JobTitle CRUD operations
 - ✅ Permission enforcement
 - ✅ Validation (phone numbers, NID, passwords)
-- ✅ Model behavior (NID extraction, email null handling)
+- ✅ Model behavior (NID extraction, military status auto-set)
