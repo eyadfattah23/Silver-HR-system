@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
 
-from .serializers import (
+from ..serializers import (
     EmployeeSerializer,
     EmployeeListSerializer,
     EmployeeCreateSerializer,
@@ -59,6 +59,10 @@ class EmployeeListCreateView(generics.ListCreateAPIView):
             return EmployeeCreateSerializer
         return EmployeeListSerializer
 
+    def perform_create(self, serializer):
+        """Set created_by to current user."""
+        serializer.save(created_by=self.request.user)
+
 
 class EmployeeDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -80,7 +84,8 @@ class EmployeeDetailView(generics.RetrieveUpdateDestroyAPIView):
         """Soft delete - deactivate the employee instead of deleting."""
         instance = self.get_object()
         instance.is_active = False
-        instance.save(update_fields=['is_active'])
+        instance.updated_by = request.user
+        instance.save(update_fields=['is_active', 'updated_by'])
         return Response(
             {"detail": "Employee deactivated successfully."},
             status=status.HTTP_200_OK
@@ -105,7 +110,8 @@ class EmployeeActivateView(APIView):
             )
 
         employee.is_active = True
-        employee.save(update_fields=['is_active'])
+        employee.updated_by = request.user
+        employee.save(update_fields=['is_active', 'updated_by'])
         return Response(
             {"detail": "Employee activated successfully."},
             status=status.HTTP_200_OK
@@ -146,7 +152,8 @@ class EmployeeSetPasswordView(APIView):
             )
 
         employee.set_password(new_password)
-        employee.save(update_fields=['password'])
+        employee.updated_by = request.user
+        employee.save(update_fields=['password', 'updated_by'])
 
         return Response(
             {"detail": "Password updated successfully."},
