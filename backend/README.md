@@ -1,4 +1,4 @@
-# Silver internal HR System – Backend
+# Silver internal HR System – Backend )(This README is not updated yet, but will be soon. Please refer to the docs/API.md documentation for now.)
 
 Backend system for **Silver internal HR System**, built with **Django 5**, **Django REST Framework**, **JWT authentication (Djoser)**, **PostgreSQL**, **Docker**, and **Channels**.
 
@@ -94,10 +94,10 @@ This will:
 docker compose up -d
 
 # View logs:
-docker compose logs -f backend
+docker compose logs -f silver-backend-web-app
 
 # Run Django commands in container:
-docker compose exec backend python manage.py <command>
+docker compose exec silver-backend-web-app python manage.py <command>
 
 # Reset everything (WARNING: deletes data):
 docker compose down -v
