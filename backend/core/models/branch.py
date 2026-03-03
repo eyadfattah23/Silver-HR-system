@@ -23,6 +23,8 @@ class Branch(models.Model):
     
     class Meta:
         unique_together = ('name', 'city') # Ensure branch names are unique within a city
+        verbose_name = _("Branch")
+        verbose_name_plural = _("Branches")
     def __str__(self):
         return f"{self.name} - {self.city.name}"
     
