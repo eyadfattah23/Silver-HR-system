@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'cloudinary',
     'core',
     'employees',
+    'permissions',
 ]
 
 MIDDLEWARE = [
