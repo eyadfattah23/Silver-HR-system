@@ -29,6 +29,9 @@ urlpatterns = [
     path('api/v1/auth/', include('djoser.urls')),
     path('api/v1/auth/', include('djoser.urls.jwt')),
 
+    # Core endpoints (cities, branches, departments)
+    path('api/v1/core/', include('core.urls')),
+
     # Custom employee endpoints
     path('api/v1/employees/', include('employees.urls')),
 ] + debug_toolbar_urls()
