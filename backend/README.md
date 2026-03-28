@@ -1,6 +1,6 @@
-# Silver internal HR System – Backend )(This README is not updated yet, but will be soon. Please refer to the docs/API.md documentation for now.)
+# Silver HR System – Backend
 
-Backend system for **Silver internal HR System**, built with **Django 5**, **Django REST Framework**, **JWT authentication (Djoser)**, **PostgreSQL**, **Docker**, and **Channels**.
+Backend system for **Silver HR System**, built with **Django 5**, **Django REST Framework**, **JWT authentication (Djoser)**, **PostgreSQL**, **Docker**, and **Channels**.
 
 This project supports both **local development** and **Docker deployment**. Migrations must be created locally and committed to git.
 
@@ -134,7 +134,7 @@ For complete API reference, see **[docs/API.md](docs/API.md)**.
 |----------|--------|-------------|
 | `/api/v1/employees/me/` | GET | View own profile (read-only) |
 
-#### Admin Dashboard API
+#### Admin Employee Management (is_staff=True)
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/v1/employees/` | GET | List all employees |
@@ -144,13 +144,29 @@ For complete API reference, see **[docs/API.md](docs/API.md)**.
 | `/api/v1/employees/{id}/` | DELETE | Deactivate employee |
 | `/api/v1/employees/{id}/activate/` | POST | Reactivate employee |
 | `/api/v1/employees/{id}/set-password/` | POST | Reset employee password |
+| `/api/v1/employees/job-titles/` | GET/POST | List/Create job titles |
+| `/api/v1/employees/job-titles/{id}/` | GET/PATCH/DELETE | Job title details |
+
+#### Core Management (is_superuser=True)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/core/cities/` | GET/POST | List/Create cities |
+| `/api/v1/core/cities/active/` | GET | List active cities only |
+| `/api/v1/core/cities/{id}/` | GET/PATCH/DELETE | City details |
+| `/api/v1/core/branches/` | GET/POST | List/Create branches |
+| `/api/v1/core/branches/active/` | GET | List active branches only |
+| `/api/v1/core/branches/{id}/` | GET/PATCH/DELETE | Branch details |
+| `/api/v1/core/departments/` | GET/POST | List/Create departments |
+| `/api/v1/core/departments/active/` | GET | List active departments only |
+| `/api/v1/core/departments/{id}/` | GET/PATCH/DELETE | Department details |
 
 ### Permission Summary
 
-| User Type | Can Do |
-|-----------|--------|
-| **Employee** | View own profile, change own password |
-| **Admin** | Full CRUD on all employees |
+| User Type | Flag | Can Do |
+|-----------|------|--------|
+| **Employee** | - | View own profile, change own password |
+| **Admin** | `is_staff=True` | Full CRUD on employees, job titles |
+| **Superuser** | `is_superuser=True` | All admin permissions + City/Branch/Department management |
 
 ---
 
@@ -159,14 +175,18 @@ For complete API reference, see **[docs/API.md](docs/API.md)**.
 ### Run All Tests
 
 ```bash
-# Local
-python manage.py test employees
+# Local - All tests
+python manage.py test
 
-# Docker
-docker compose exec silver-backend-web-app python manage.py test employees
+# Docker - All tests
+docker compose exec silver-backend-web-app python manage.py test
+
+# Specific app
+python manage.py test employees
+python manage.py test core
 
 # With verbosity
-python manage.py test employees -v 2
+python manage.py test -v 2
 ```
 
 ### Run Specific Tests
@@ -181,6 +201,7 @@ python manage.py test employees.tests.AuthenticationTests.test_login_with_valid_
 
 ### Test Categories
 
+#### Employee Tests (57 tests)
 | Category | Description |
 |----------|-------------|
 | `AuthenticationTests` | JWT login, token refresh, invalid credentials |
@@ -194,6 +215,23 @@ python manage.py test employees.tests.AuthenticationTests.test_login_with_valid_
 | `AdminEmployeeActivateTests` | Reactivating employees |
 | `AdminSetPasswordTests` | Admin password reset |
 | `EmployeeModelTests` | Model validations, NID extraction |
+| `JobTitleTests` | Job title CRUD operations |
+
+#### Core Tests (56 tests)
+| Category | Description |
+|----------|-------------|
+| `CityListTests` | City listing (superuser only) |
+| `CityCreateTests` | City creation + validation |
+| `CityDetailTests` | City update/delete operations |
+| `CityModelTests` | City model behavior |
+| `BranchListTests` | Branch listing (superuser only) |
+| `BranchCreateTests` | Branch creation + validation |
+| `BranchDetailTests` | Branch update/delete operations |
+| `BranchModelTests` | Branch model behavior |
+| `DepartmentListTests` | Department listing (superuser only) |
+| `DepartmentCreateTests` | Department creation + validation |
+| `DepartmentDetailTests` | Department update/delete operations |
+| `DepartmentModelTests` | Department model behavior |
 
 ---
 

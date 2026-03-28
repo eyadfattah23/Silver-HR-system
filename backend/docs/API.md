@@ -2,6 +2,79 @@
 
 Complete API reference for the Silver HR System backend.
 
+> **For Frontend Developers:** Jump to [Quick Reference](#quick-reference) for a complete endpoint table.
+
+---
+
+## Quick Reference
+
+### All Endpoints at a Glance
+
+#### 🔐 Authentication (No auth required)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/jwt/create/` | Login (get tokens) |
+| POST | `/api/v1/auth/jwt/refresh/` | Refresh access token |
+
+#### 👤 Employee Self-Service (Any authenticated user)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/employees/me/` | Get own profile |
+| POST | `/api/v1/auth/users/set_password/` | Change own password |
+
+#### 👔 Admin - Employee Management (`is_staff=true`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/employees/` | List all employees |
+| POST | `/api/v1/employees/` | Create employee |
+| GET | `/api/v1/employees/{id}/` | Get employee |
+| PATCH | `/api/v1/employees/{id}/` | Update employee |
+| DELETE | `/api/v1/employees/{id}/` | Deactivate employee |
+| POST | `/api/v1/employees/{id}/activate/` | Reactivate employee |
+| POST | `/api/v1/employees/{id}/set-password/` | Reset employee password |
+
+#### 👔 Admin - Job Titles (`is_staff=true`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/employees/job-titles/` | List all job titles |
+| GET | `/api/v1/employees/job-titles/active/` | List active job titles |
+| POST | `/api/v1/employees/job-titles/` | Create job title |
+| GET | `/api/v1/employees/job-titles/{id}/` | Get job title |
+| PATCH | `/api/v1/employees/job-titles/{id}/` | Update job title |
+| DELETE | `/api/v1/employees/job-titles/{id}/` | Deactivate job title |
+
+#### 🏢 Superuser - Cities (`is_superuser=true`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/core/cities/` | List all cities |
+| GET | `/api/v1/core/cities/active/` | List active cities |
+| POST | `/api/v1/core/cities/` | Create city |
+| GET | `/api/v1/core/cities/{id}/` | Get city |
+| PATCH | `/api/v1/core/cities/{id}/` | Update city |
+| DELETE | `/api/v1/core/cities/{id}/` | Deactivate city |
+
+#### 🏢 Superuser - Branches (`is_superuser=true`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/core/branches/` | List all branches |
+| GET | `/api/v1/core/branches/active/` | List active branches |
+| POST | `/api/v1/core/branches/` | Create branch |
+| GET | `/api/v1/core/branches/{id}/` | Get branch |
+| PATCH | `/api/v1/core/branches/{id}/` | Update branch |
+| DELETE | `/api/v1/core/branches/{id}/` | Deactivate branch |
+
+#### 🏢 Superuser - Departments (`is_superuser=true`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/core/departments/` | List all departments |
+| GET | `/api/v1/core/departments/active/` | List active departments |
+| POST | `/api/v1/core/departments/` | Create department |
+| GET | `/api/v1/core/departments/{id}/` | Get department |
+| PATCH | `/api/v1/core/departments/{id}/` | Update department |
+| DELETE | `/api/v1/core/departments/{id}/` | Deactivate department |
+
+---
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -11,6 +84,10 @@ Complete API reference for the Silver HR System backend.
   - [Employee Self-Service](#employee-self-service)
   - [Admin Employee Management](#admin-employee-management)
   - [JobTitle Management](#jobtitle-management)
+  - [Core Management (Superuser Only)](#core-management-superuser-only)
+    - [City Management](#city-management)
+    - [Branch Management](#branch-management)
+    - [Department Management](#department-management)
 - [Data Models](#data-models)
 - [Error Handling](#error-handling)
 - [Examples](#examples)
@@ -40,6 +117,21 @@ Authorization: JWT <access_token>
 | **Unauthenticated** | Login only |
 | **Employee** | View own profile, change own password |
 | **Admin** (`is_staff=True`) | Full CRUD on all employees, job titles |
+| **Superuser** (`is_superuser=True`) | All admin permissions + City/Branch/Department management |
+
+### Organizational Hierarchy
+
+```
+City (Cairo, Alexandria, ...)
+  └── Branch (Main Branch, Downtown Branch, ...)
+        └── Department (HR, IT, Sales, ...)
+              └── Employee
+```
+
+- **City**: Geographic location (e.g., Cairo, Alexandria)
+- **Branch**: Physical office within a city
+- **Department**: Organizational unit within a branch (HR, IT, etc.)
+- **Employee**: Staff member assigned to a department
 
 ---
 
@@ -96,6 +188,24 @@ Authorization: JWT <access_token>
 |------------|----------|
 | Access Token | 99 days |
 | Refresh Token | 7 days |
+
+### Frontend Integration Notes
+
+1. **Store tokens securely** - Use `httpOnly` cookies or secure storage
+2. **Include token in all requests** - Add `Authorization: JWT <access_token>` header
+3. **Handle 401 errors** - Redirect to login or attempt token refresh
+4. **Check permissions** - Use `/api/v1/employees/me/` response to check `is_staff` and `is_superuser`
+
+```javascript
+// Example: Axios interceptor for auth
+axios.interceptors.request.use(config => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `JWT ${token}`;
+  }
+  return config;
+});
+```
 
 ---
 
@@ -459,7 +569,322 @@ All JobTitle management endpoints require `is_staff=True`.
 
 ---
 
+### Core Management (Superuser Only)
+
+All Core management endpoints (City, Branch, Department) require `is_superuser=True`.
+These endpoints manage the organizational hierarchy: **City → Branch → Department → Employee**
+
+#### City Management
+
+##### List All Cities
+
+**Endpoint:** `GET /api/v1/core/cities/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):**
+```json
+[
+    {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "name": "Cairo",
+        "code": "CAI",
+        "description": "Capital city of Egypt",
+        "branch_count": 3,
+        "is_active": true,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+    }
+]
+```
+
+##### List Active Cities Only
+
+**Endpoint:** `GET /api/v1/core/cities/active/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):** Array of active cities (same format as above)
+
+##### Create City
+
+**Endpoint:** `POST /api/v1/core/cities/`
+
+**Authentication:** Superuser required
+
+**Request Body:**
+```json
+{
+    "name": "Alexandria",
+    "code": "ALX",
+    "description": "Second largest city in Egypt"
+}
+```
+
+**Success Response (201 Created):** Created city object
+
+**Validation:**
+- `name` and `code` must be unique
+- `code` is auto-uppercased
+
+##### Get City Details
+
+**Endpoint:** `GET /api/v1/core/cities/{id}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):** City object with branch count
+
+##### Update City
+
+**Endpoint:** `PUT /api/v1/core/cities/{id}/` or `PATCH /api/v1/core/cities/{id}/`
+
+**Authentication:** Superuser required
+
+**Request Body:**
+```json
+{
+    "description": "Updated description",
+    "is_active": false
+}
+```
+
+**Success Response (200 OK):** Updated city object
+
+##### Delete (Soft Delete) City
+
+**Endpoint:** `DELETE /api/v1/core/cities/{id}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):**
+```json
+{
+    "message": "City deactivated successfully"
+}
+```
+
+**Note:** Cities are soft-deleted (is_active=false), not permanently removed.
+
+---
+
+#### Branch Management
+
+##### List All Branches
+
+**Endpoint:** `GET /api/v1/core/branches/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):**
+```json
+[
+    {
+        "id": "550e8400-e29b-41d4-a716-446655440002",
+        "name": "Main Branch",
+        "description": "Headquarters",
+        "city": "550e8400-e29b-41d4-a716-446655440001",
+        "city_name": "Cairo",
+        "location": "https://maps.google.com/...",
+        "department_count": 5,
+        "is_active": true,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+    }
+]
+```
+
+##### List Active Branches Only
+
+**Endpoint:** `GET /api/v1/core/branches/active/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):** Array of active branches
+
+##### Create Branch
+
+**Endpoint:** `POST /api/v1/core/branches/`
+
+**Authentication:** Superuser required
+
+**Request Body:**
+```json
+{
+    "name": "Downtown Branch",
+    "description": "Branch in downtown area",
+    "city": "550e8400-e29b-41d4-a716-446655440001",
+    "location": "https://maps.google.com/..."
+}
+```
+
+**Success Response (201 Created):** Created branch object
+
+**Validation:**
+- Branch name must be unique within the same city
+- Cannot create branch in an inactive city
+
+##### Get Branch Details
+
+**Endpoint:** `GET /api/v1/core/branches/{id}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):** Branch object with city details and department count
+
+##### Update Branch
+
+**Endpoint:** `PUT /api/v1/core/branches/{id}/` or `PATCH /api/v1/core/branches/{id}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):** Updated branch object
+
+##### Delete (Soft Delete) Branch
+
+**Endpoint:** `DELETE /api/v1/core/branches/{id}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):**
+```json
+{
+    "message": "Branch deactivated successfully"
+}
+```
+
+---
+
+#### Department Management
+
+##### List All Departments
+
+**Endpoint:** `GET /api/v1/core/departments/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):**
+```json
+[
+    {
+        "id": "550e8400-e29b-41d4-a716-446655440003",
+        "name": "Human Resources",
+        "code": "HR",
+        "description": "HR Department",
+        "branch": "550e8400-e29b-41d4-a716-446655440002",
+        "branch_name": "Main Branch",
+        "city_name": "Cairo",
+        "employee_count": 12,
+        "is_active": true,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+    }
+]
+```
+
+##### List Active Departments Only
+
+**Endpoint:** `GET /api/v1/core/departments/active/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):** Array of active departments
+
+##### Create Department
+
+**Endpoint:** `POST /api/v1/core/departments/`
+
+**Authentication:** Superuser required
+
+**Request Body:**
+```json
+{
+    "name": "Information Technology",
+    "code": "IT",
+    "description": "IT Department",
+    "branch": "550e8400-e29b-41d4-a716-446655440002"
+}
+```
+
+**Success Response (201 Created):** Created department object
+
+**Validation:**
+- Department `code` must be unique
+- `code` is auto-uppercased
+- Cannot create department in an inactive branch
+
+##### Get Department Details
+
+**Endpoint:** `GET /api/v1/core/departments/{id}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):** Department object with branch/city details and employee count
+
+##### Update Department
+
+**Endpoint:** `PUT /api/v1/core/departments/{id}/` or `PATCH /api/v1/core/departments/{id}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):** Updated department object
+
+##### Delete (Soft Delete) Department
+
+**Endpoint:** `DELETE /api/v1/core/departments/{id}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):**
+```json
+{
+    "message": "Department deactivated successfully"
+}
+```
+
+---
+
 ## Data Models
+
+### City Model
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | UUID | Auto | Primary key |
+| `name` | String | Yes | City name (max 100 chars), unique |
+| `code` | String | Yes | City code (max 10 chars), unique, auto-uppercased |
+| `description` | Text | No | City description |
+| `is_active` | Boolean | No | Active status (default: true) |
+| `created_at` | DateTime | Auto | Record creation timestamp |
+| `updated_at` | DateTime | Auto | Last update timestamp |
+
+### Branch Model
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | UUID | Auto | Primary key |
+| `name` | String | Yes | Branch name (max 100 chars) |
+| `description` | Text | No | Branch description |
+| `city` | UUID | Yes | Foreign key to City |
+| `location` | URL | No | Google Maps or location URL |
+| `is_active` | Boolean | No | Active status (default: true) |
+| `created_at` | DateTime | Auto | Record creation timestamp |
+| `updated_at` | DateTime | Auto | Last update timestamp |
+
+**Note:** Branch name must be unique within the same city.
+
+### Department Model
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | UUID | Auto | Primary key |
+| `name` | String | Yes | Department name (max 100 chars) |
+| `code` | String | Yes | Department code (max 10 chars), unique, auto-uppercased |
+| `description` | Text | No | Department description |
+| `branch` | UUID | Yes | Foreign key to Branch |
+| `is_active` | Boolean | No | Active status (default: true) |
+| `created_at` | DateTime | Auto | Record creation timestamp |
+| `updated_at` | DateTime | Auto | Last update timestamp |
 
 ### Employee Model
 
@@ -733,6 +1158,47 @@ curl -X POST http://localhost:8001/api/v1/auth/users/set_password/ \
   }'
 ```
 
+### Superuser: Create City (cURL)
+
+```bash
+curl -X POST http://localhost:8001/api/v1/core/cities/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: JWT eyJ..." \
+  -d '{
+    "name": "الإسكندرية",
+    "code": "ALX",
+    "description": "محافظة الإسكندرية"
+  }'
+```
+
+### Superuser: Create Branch (cURL)
+
+```bash
+curl -X POST http://localhost:8001/api/v1/core/branches/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: JWT eyJ..." \
+  -d '{
+    "name": "الفرع الرئيسي",
+    "city": "550e8400-e29b-41d4-a716-446655440001",
+    "description": "المقر الرئيسي",
+    "location": "https://maps.google.com/..."
+  }'
+```
+
+### Superuser: Create Department (cURL)
+
+```bash
+curl -X POST http://localhost:8001/api/v1/core/departments/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: JWT eyJ..." \
+  -d '{
+    "name": "الموارد البشرية",
+    "code": "HR",
+    "branch": "550e8400-e29b-41d4-a716-446655440002",
+    "description": "قسم الموارد البشرية"
+  }'
+```
+
 ---
 
 ## Testing
@@ -740,17 +1206,22 @@ curl -X POST http://localhost:8001/api/v1/auth/users/set_password/ \
 Run the test suite:
 
 ```bash
-# Local
-python manage.py test employees
+# All tests (local)
+python manage.py test
 
-# Docker
-docker compose exec silver-backend-web-app python manage.py test employees
+# All tests (Docker)
+docker compose exec silver-backend-web-app python manage.py test
+
+# Specific app
+python manage.py test employees
+python manage.py test core
 
 # With verbosity
-python manage.py test employees -v 2
+python manage.py test -v 2
 
 # Specific test module
 python manage.py test employees.tests.test_authentication
+python manage.py test core.tests.test_city
 
 # Specific test class
 python manage.py test employees.tests.test_authentication.AuthenticationTests
@@ -761,7 +1232,7 @@ python manage.py test employees.tests.test_authentication.AuthenticationTests.te
 
 ### Test Coverage
 
-The test suite covers:
+**Employee Tests (57 tests):**
 - ✅ Authentication (login, token refresh, invalid credentials)
 - ✅ Employee self-service (view profile, change password)
 - ✅ Admin employee list & create
@@ -772,3 +1243,11 @@ The test suite covers:
 - ✅ Permission enforcement
 - ✅ Validation (phone numbers, NID, passwords)
 - ✅ Model behavior (NID extraction, military status auto-set)
+
+**Core Tests (56 tests):**
+- ✅ City CRUD operations (superuser only)
+- ✅ Branch CRUD operations (superuser only)
+- ✅ Department CRUD operations (superuser only)
+- ✅ Permission enforcement (admin/employee denied)
+- ✅ Validation (inactive parent entities, duplicates)
+- ✅ Model behavior (soft delete, auto-uppercase codes)
