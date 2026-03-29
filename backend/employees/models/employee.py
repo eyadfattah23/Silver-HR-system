@@ -259,6 +259,16 @@ class Employee(AbstractUser):
         null=True,
         blank=True
     )
+    
+    # ManyToMany relationship to Role through EmployeeRole
+    roles = models.ManyToManyField(
+        'permissions.Role',
+        through='permissions.EmployeeRole',
+        through_fields=('employee', 'role'),
+        related_name='employees',
+        blank=True
+    )
+    
     employment_type = models.CharField(
         max_length=20,
         choices=EmploymentType.choices,
@@ -373,3 +383,73 @@ class Employee(AbstractUser):
 
     def __str__(self):
         return f"{self.first_name} {self.fourth_name} ({self.phone_number1})"
+    
+    # ==========================================================================
+    # Role & Permission helpers
+    # ==========================================================================
+    
+    def get_active_roles(self, city=None, branch=None, department=None):
+        """
+        Return all active roles for this employee, optionally filtered by scope.
+        If scope parameters are provided, only returns roles that apply to that scope.
+        """
+        from permissions.models import EmployeeRole
+        
+        qs = EmployeeRole.objects.filter(
+            employee=self,
+            is_active=True,
+            role__is_active=True
+        ).select_related('role', 'city', 'branch', 'department')
+        
+        if city or branch or department:
+            # Filter by scope - need to check each role's applicability
+            role_ids = [
+                er.role_id for er in qs 
+                if er.applies_to(city=city, branch=branch, department=department)
+            ]
+            return self.roles.filter(id__in=role_ids, is_active=True)
+        
+        return self.roles.filter(
+            employee_roles__is_active=True,
+            is_active=True
+        ).distinct()
+    
+    def has_role(self, role_name, city=None, branch=None, department=None):
+        """Check if this employee has a specific role, optionally within a scope."""
+        return self.get_active_roles(
+            city=city, branch=branch, department=department
+        ).filter(name=role_name).exists()
+    
+    def has_permission(self, permission_code, city=None, branch=None, department=None):
+        """
+        Check if this employee has a specific permission.
+        Checks all active roles and their permissions.
+        """
+        roles = self.get_active_roles(city=city, branch=branch, department=department)
+        for role in roles:
+            if role.has_permission(permission_code):
+                return True
+        return False
+    
+    def has_resource_action(self, resource, action, city=None, branch=None, department=None):
+        """
+        Check if this employee has permission for a specific resource and action.
+        """
+        roles = self.get_active_roles(city=city, branch=branch, department=department)
+        for role in roles:
+            if role.has_resource_action(resource, action):
+                return True
+        return False
+    
+    def get_all_permissions(self, city=None, branch=None, department=None):
+        """
+        Return all permissions this employee has across all their active roles.
+        """
+        from permissions.models import Permission
+        
+        roles = self.get_active_roles(city=city, branch=branch, department=department)
+        return Permission.objects.filter(
+            roles__in=roles,
+            role_permissions__is_active=True,
+            is_active=True
+        ).distinct()
