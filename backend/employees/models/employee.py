@@ -423,7 +423,7 @@ class Employee(AbstractUser):
     def has_permission(self, permission_code, city=None, branch=None, department=None):
         """
         Check if this employee has a specific permission.
-        Checks both role-based permissions and extra permissions.
+        Checks role-based permissions, extra permissions, and delegated permissions.
         """
         # Check role-based permissions
         roles = self.get_active_roles(city=city, branch=branch, department=department)
@@ -436,12 +436,17 @@ class Employee(AbstractUser):
         if extra_perms.filter(code=permission_code).exists():
             return True
         
+        # Check delegated permissions
+        delegated_perms = self.get_delegated_permissions(city=city, branch=branch, department=department)
+        if delegated_perms.filter(code=permission_code).exists():
+            return True
+        
         return False
     
     def has_resource_action(self, resource, action, city=None, branch=None, department=None):
         """
         Check if this employee has permission for a specific resource and action.
-        Checks both role-based permissions and extra permissions.
+        Checks role-based permissions, extra permissions, and delegated permissions.
         """
         # Check role-based permissions
         roles = self.get_active_roles(city=city, branch=branch, department=department)
@@ -454,12 +459,17 @@ class Employee(AbstractUser):
         if extra_perms.filter(resource=resource, action=action).exists():
             return True
         
+        # Check delegated permissions
+        delegated_perms = self.get_delegated_permissions(city=city, branch=branch, department=department)
+        if delegated_perms.filter(resource=resource, action=action).exists():
+            return True
+        
         return False
     
     def get_all_permissions(self, city=None, branch=None, department=None):
         """
-        Return all permissions this employee has across all their active roles
-        and extra permissions.
+        Return all permissions this employee has across all their active roles,
+        extra permissions, and delegated permissions.
         """
         from permissions.models import Permission
         
@@ -474,8 +484,11 @@ class Employee(AbstractUser):
         # Get extra permissions
         extra_permissions = self.get_extra_permissions(city=city, branch=branch, department=department)
         
+        # Get delegated permissions
+        delegated_permissions = self.get_delegated_permissions(city=city, branch=branch, department=department)
+        
         # Combine and return distinct
-        return (role_permissions | extra_permissions).distinct()
+        return (role_permissions | extra_permissions | delegated_permissions).distinct()
     
     def get_extra_permissions(self, city=None, branch=None, department=None):
         """
@@ -518,3 +531,64 @@ class Employee(AbstractUser):
         return self.get_extra_permissions(
             city=city, branch=branch, department=department
         ).filter(code=permission_code).exists()
+    
+    def get_delegated_permissions(self, city=None, branch=None, department=None):
+        """
+        Return all active delegated permissions for this employee, optionally filtered by scope.
+        Excludes expired delegations.
+        """
+        from permissions.models import PermissionDelegation, Permission
+        from django.utils import timezone
+        
+        qs = PermissionDelegation.objects.filter(
+            delegate=self,
+            is_active=True,
+            permission__is_active=True
+        ).filter(
+            # Not expired (null or future)
+            models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=timezone.now())
+        ).select_related('permission', 'city', 'branch', 'department')
+        
+        if city or branch or department:
+            # Filter by scope - need to check each delegation's applicability
+            perm_ids = [
+                pd.permission_id for pd in qs 
+                if pd.applies_to(city=city, branch=branch, department=department)
+            ]
+            return Permission.objects.filter(id__in=perm_ids, is_active=True)
+        
+        return Permission.objects.filter(
+            delegations__delegate=self,
+            delegations__is_active=True,
+            is_active=True
+        ).filter(
+            models.Q(delegations__expires_at__isnull=True) | 
+            models.Q(delegations__expires_at__gt=timezone.now())
+        ).distinct()
+    
+    def has_delegated_permission(self, permission_code, city=None, branch=None, department=None):
+        """
+        Check if this employee has a specific delegated permission.
+        """
+        return self.get_delegated_permissions(
+            city=city, branch=branch, department=department
+        ).filter(code=permission_code).exists()
+    
+    def can_delegate_permission(self, permission, city=None, branch=None, department=None):
+        """
+        Check if this employee can delegate a specific permission.
+        """
+        from permissions.models import PermissionDelegation
+        return PermissionDelegation.can_delegate(
+            self, permission, city=city, branch=branch, department=department
+        )
+    
+    def get_delegation_rights(self):
+        """
+        Return all active delegation rights for this employee.
+        """
+        from permissions.models import DelegationRight
+        return DelegationRight.objects.filter(
+            employee=self,
+            is_active=True
+        ).select_related('can_delegate_permission')

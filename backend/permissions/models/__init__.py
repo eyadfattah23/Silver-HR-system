@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Models for the permissions app (Role, Permission, RolePermission, EmployeeRole, EmployeeExtraPermission)."""
+"""Models for the permissions app."""
 
 from .permission import Permission
 from .role import Role, RolePermission, EmployeeRole, EmployeeExtraPermission
+from .delegation import DelegationRight, PermissionDelegation
 
 __all__ = [
     'Permission',
@@ -10,4 +11,6 @@ __all__ = [
     'RolePermission',
     'EmployeeRole',
     'EmployeeExtraPermission',
+    'DelegationRight',
+    'PermissionDelegation',
 ]
