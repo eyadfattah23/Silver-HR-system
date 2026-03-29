@@ -423,33 +423,98 @@ class Employee(AbstractUser):
     def has_permission(self, permission_code, city=None, branch=None, department=None):
         """
         Check if this employee has a specific permission.
-        Checks all active roles and their permissions.
+        Checks both role-based permissions and extra permissions.
         """
+        # Check role-based permissions
         roles = self.get_active_roles(city=city, branch=branch, department=department)
         for role in roles:
             if role.has_permission(permission_code):
                 return True
+        
+        # Check extra permissions
+        extra_perms = self.get_extra_permissions(city=city, branch=branch, department=department)
+        if extra_perms.filter(code=permission_code).exists():
+            return True
+        
         return False
     
     def has_resource_action(self, resource, action, city=None, branch=None, department=None):
         """
         Check if this employee has permission for a specific resource and action.
+        Checks both role-based permissions and extra permissions.
         """
+        # Check role-based permissions
         roles = self.get_active_roles(city=city, branch=branch, department=department)
         for role in roles:
             if role.has_resource_action(resource, action):
                 return True
+        
+        # Check extra permissions
+        extra_perms = self.get_extra_permissions(city=city, branch=branch, department=department)
+        if extra_perms.filter(resource=resource, action=action).exists():
+            return True
+        
         return False
     
     def get_all_permissions(self, city=None, branch=None, department=None):
         """
-        Return all permissions this employee has across all their active roles.
+        Return all permissions this employee has across all their active roles
+        and extra permissions.
         """
         from permissions.models import Permission
         
+        # Get role-based permissions
         roles = self.get_active_roles(city=city, branch=branch, department=department)
-        return Permission.objects.filter(
+        role_permissions = Permission.objects.filter(
             roles__in=roles,
             role_permissions__is_active=True,
             is_active=True
+        )
+        
+        # Get extra permissions
+        extra_permissions = self.get_extra_permissions(city=city, branch=branch, department=department)
+        
+        # Combine and return distinct
+        return (role_permissions | extra_permissions).distinct()
+    
+    def get_extra_permissions(self, city=None, branch=None, department=None):
+        """
+        Return all active extra permissions for this employee, optionally filtered by scope.
+        Excludes expired permissions.
+        """
+        from permissions.models import EmployeeExtraPermission, Permission
+        from django.utils import timezone
+        
+        qs = EmployeeExtraPermission.objects.filter(
+            employee=self,
+            is_active=True,
+            permission__is_active=True
+        ).filter(
+            # Not expired (null or future)
+            models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=timezone.now())
+        ).select_related('permission', 'city', 'branch', 'department')
+        
+        if city or branch or department:
+            # Filter by scope - need to check each permission's applicability
+            perm_ids = [
+                ep.permission_id for ep in qs 
+                if ep.applies_to(city=city, branch=branch, department=department)
+            ]
+            return Permission.objects.filter(id__in=perm_ids, is_active=True)
+        
+        return Permission.objects.filter(
+            employee_extra_permissions__employee=self,
+            employee_extra_permissions__is_active=True,
+            is_active=True
+        ).filter(
+            models.Q(employee_extra_permissions__expires_at__isnull=True) | 
+            models.Q(employee_extra_permissions__expires_at__gt=timezone.now())
         ).distinct()
+    
+    def has_extra_permission(self, permission_code, city=None, branch=None, department=None):
+        """
+        Check if this employee has a specific extra permission (not via role).
+        """
+        return self.get_extra_permissions(
+            city=city, branch=branch, department=department
+        ).filter(code=permission_code).exists()

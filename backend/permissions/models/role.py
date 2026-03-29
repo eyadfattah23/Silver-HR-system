@@ -232,3 +232,167 @@ class EmployeeRole(models.Model):
             return city and self.city_id == city.id
         
         return False
+
+
+class EmployeeExtraPermission(models.Model):
+    """
+    Extra permissions granted to specific employees beyond their role's permissions.
+    Allows granting individual permissions with optional scope (city/branch/department).
+    """
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    employee = models.ForeignKey(
+        'employees.Employee',
+        on_delete=models.CASCADE,
+        related_name='extra_permissions'
+    )
+    permission = models.ForeignKey(
+        'permissions.Permission',
+        on_delete=models.CASCADE,
+        related_name='employee_extra_permissions'
+    )
+    
+    # Scope limiters (null means no restriction at that level)
+    city = models.ForeignKey(
+        'core.City',
+        on_delete=models.CASCADE,
+        related_name='employee_extra_permissions',
+        null=True,
+        blank=True,
+        help_text='If set, permission applies only to this city'
+    )
+    branch = models.ForeignKey(
+        'core.Branch',
+        on_delete=models.CASCADE,
+        related_name='employee_extra_permissions',
+        null=True,
+        blank=True,
+        help_text='If set, permission applies only to this branch'
+    )
+    department = models.ForeignKey(
+        'core.Department',
+        on_delete=models.CASCADE,
+        related_name='employee_extra_permissions',
+        null=True,
+        blank=True,
+        help_text='If set, permission applies only to this department'
+    )
+    
+    # Reason and status
+    reason = models.TextField(
+        blank=True,
+        help_text='Why was this extra permission granted?'
+    )
+    is_active = models.BooleanField(default=True)
+    
+    # Expiration (optional, for temporary permissions)
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Optional expiration for temporary permissions'
+    )
+    
+    # Audit fields
+    granted_by = models.ForeignKey(
+        'employees.Employee',
+        on_delete=models.PROTECT,
+        related_name='extra_permissions_granted'
+    )
+    granted_at = models.DateTimeField(auto_now_add=True)
+    
+    revoked_by = models.ForeignKey(
+        'employees.Employee',
+        on_delete=models.SET_NULL,
+        related_name='extra_permissions_revoked',
+        null=True,
+        blank=True
+    )
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'Employee Extra Permission'
+        verbose_name_plural = 'Employee Extra Permissions'
+        unique_together = ('employee', 'permission', 'city', 'branch', 'department')
+        indexes = [
+            models.Index(fields=['employee']),
+            models.Index(fields=['permission']),
+            models.Index(fields=['is_active']),
+            models.Index(fields=['employee', 'is_active']),
+            models.Index(fields=['expires_at']),
+        ]
+    
+    def __str__(self):
+        scope = self._get_scope_description()
+        return f"{self.employee} + {self.permission.code}{scope}"
+    
+    def _get_scope_description(self):
+        """Return human-readable scope description."""
+        if self.department:
+            return f" (Department: {self.department.name})"
+        if self.branch:
+            return f" (Branch: {self.branch.name})"
+        if self.city:
+            return f" (City: {self.city.name})"
+        return " (Global)"
+    
+    def revoke(self, revoked_by):
+        """Revoke this extra permission."""
+        from django.utils import timezone
+        self.is_active = False
+        self.revoked_by = revoked_by
+        self.revoked_at = timezone.now()
+        self.save()
+    
+    @property
+    def is_expired(self):
+        """Check if this permission has expired."""
+        if not self.expires_at:
+            return False
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+    
+    @property
+    def is_effective(self):
+        """Check if this permission is currently effective (active and not expired)."""
+        return self.is_active and not self.is_expired
+    
+    @property
+    def scope_level(self):
+        """Return the scope level: 'global', 'city', 'branch', or 'department'."""
+        if self.department:
+            return 'department'
+        if self.branch:
+            return 'branch'
+        if self.city:
+            return 'city'
+        return 'global'
+    
+    def applies_to(self, city=None, branch=None, department=None):
+        """
+        Check if this extra permission applies to the given scope.
+        Same logic as EmployeeRole.applies_to().
+        """
+        # Global permission applies everywhere
+        if not self.city and not self.branch and not self.department:
+            return True
+        
+        # Department-scoped permission
+        if self.department:
+            return department and self.department_id == department.id
+        
+        # Branch-scoped permission
+        if self.branch:
+            if department:
+                return department.branch_id == self.branch_id
+            return branch and self.branch_id == branch.id
+        
+        # City-scoped permission
+        if self.city:
+            if department:
+                return department.branch.city_id == self.city_id
+            if branch:
+                return branch.city_id == self.city_id
+            return city and self.city_id == city.id
+        
+        return False
