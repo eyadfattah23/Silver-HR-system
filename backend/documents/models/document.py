@@ -31,7 +31,7 @@ class Document(models.Model):
     file_name = models.CharField(max_length=255)
     file_format = models.CharField(max_length=20) # e.g. 'pdf', 'docx', 'jpg'
     file_size = models.PositiveIntegerField() # in bytes
-    file_path = models.FileField(upload_to='documents/')
+    file_path = models.FileField(upload_to='documents/', blank=True, null=True)
     description = models.TextField(blank=True)
     
     is_active = models.BooleanField(default=True)

@@ -34,6 +34,9 @@ urlpatterns = [
 
     # Custom employee endpoints
     path('api/v1/employees/', include('employees.urls')),
+
+    # Documents endpoints
+    path('api/v1/documents/', include('documents.urls')),
 ] + debug_toolbar_urls()
 
 

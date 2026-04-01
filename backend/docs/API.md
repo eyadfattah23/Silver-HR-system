@@ -73,6 +73,33 @@ Complete API reference for the Silver HR System backend.
 | PATCH | `/api/v1/core/departments/{id}/` | Update department |
 | DELETE | `/api/v1/core/departments/{id}/` | Deactivate department |
 
+#### 📄 Superuser - Document Types (`is_superuser=true`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/documents/types/` | List all document types |
+| GET | `/api/v1/documents/types/active/` | List active document types |
+| POST | `/api/v1/documents/types/` | Create document type |
+| GET | `/api/v1/documents/types/{id}/` | Get document type |
+| PATCH | `/api/v1/documents/types/{id}/` | Update document type |
+| DELETE | `/api/v1/documents/types/{id}/` | Deactivate document type |
+
+#### 📄 Superuser - Documents (`is_superuser=true`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/documents/` | List all documents |
+| GET | `/api/v1/documents/active/` | List active documents |
+| POST | `/api/v1/documents/` | Create document |
+| GET | `/api/v1/documents/{uuid}/` | Get document |
+| PATCH | `/api/v1/documents/{uuid}/` | Update document |
+| DELETE | `/api/v1/documents/{uuid}/` | Deactivate document |
+| GET | `/api/v1/documents/employee/{uuid}/` | List employee's documents |
+
+#### 📄 Employee - My Documents (Any authenticated user)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/documents/my/` | List own documents |
+| GET | `/api/v1/documents/my/{uuid}/` | Get own document detail |
+
 ---
 
 ## Table of Contents
@@ -88,6 +115,10 @@ Complete API reference for the Silver HR System backend.
     - [City Management](#city-management)
     - [Branch Management](#branch-management)
     - [Department Management](#department-management)
+  - [Documents Management](#documents-management)
+    - [Document Type Management (Superuser Only)](#document-type-management-superuser-only)
+    - [Document Management (Superuser Only)](#document-management-superuser-only)
+    - [My Documents (Employee Self-Service)](#my-documents-employee-self-service)
 - [Data Models](#data-models)
 - [Error Handling](#error-handling)
 - [Examples](#examples)
@@ -844,6 +875,299 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 ---
 
+### Documents Management
+
+Manage employee documents such as ID cards, passports, contracts, etc.
+
+#### Document Type Management (Superuser Only)
+
+All Document Type endpoints require `is_superuser=True`.
+
+##### List All Document Types
+
+**Endpoint:** `GET /api/v1/documents/types/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):**
+```json
+[
+    {
+        "id": 1,
+        "name": "ID Card",
+        "description": "National ID Card",
+        "is_active": true,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+    }
+]
+```
+
+##### List Active Document Types Only
+
+**Endpoint:** `GET /api/v1/documents/types/active/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):** Array of active document types
+
+##### Create Document Type
+
+**Endpoint:** `POST /api/v1/documents/types/`
+
+**Authentication:** Superuser required
+
+**Request Body:**
+```json
+{
+    "name": "Passport",
+    "description": "International Passport",
+    "is_active": true
+}
+```
+
+**Success Response (201 Created):** Created document type object
+
+**Validation:**
+- Document type `name` must be unique (case-insensitive)
+
+##### Get Document Type Details
+
+**Endpoint:** `GET /api/v1/documents/types/{id}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):**
+```json
+{
+    "id": 1,
+    "name": "ID Card",
+    "description": "National ID Card",
+    "document_count": 15,
+    "is_active": true,
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+}
+```
+
+##### Update Document Type
+
+**Endpoint:** `PUT /api/v1/documents/types/{id}/` or `PATCH /api/v1/documents/types/{id}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):** Updated document type object
+
+##### Delete (Soft Delete) Document Type
+
+**Endpoint:** `DELETE /api/v1/documents/types/{id}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):**
+```json
+{
+    "detail": "Document type deactivated successfully."
+}
+```
+
+---
+
+#### Document Management (Superuser Only)
+
+All Document admin endpoints require `is_superuser=True`.
+
+##### List All Documents
+
+**Endpoint:** `GET /api/v1/documents/`
+
+**Authentication:** Superuser required
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `employee` | UUID | Filter by employee ID |
+| `document_type` | Integer | Filter by document type ID |
+| `is_active` | Boolean | Filter by active status |
+
+**Success Response (200 OK):**
+```json
+[
+    {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "employee": "550e8400-e29b-41d4-a716-446655440000",
+        "employee_name": "أحمد محمد علي حسن",
+        "document_type": 1,
+        "document_type_name": "ID Card",
+        "file_name": "employee_id.pdf",
+        "file_format": "pdf",
+        "expiration_date": "2027-01-01",
+        "is_expired": false,
+        "is_active": true,
+        "created_at": "2024-01-01T00:00:00Z"
+    }
+]
+```
+
+##### List Active Documents Only
+
+**Endpoint:** `GET /api/v1/documents/active/`
+
+**Authentication:** Superuser required
+
+**Query Parameters:** Same as List All Documents
+
+**Success Response (200 OK):** Array of active documents
+
+##### List Employee's Documents
+
+**Endpoint:** `GET /api/v1/documents/employee/{employee_id}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):** Array of documents for the specified employee
+
+##### Create Document
+
+**Endpoint:** `POST /api/v1/documents/`
+
+**Authentication:** Superuser required
+
+**Request Body:**
+```json
+{
+    "employee": "550e8400-e29b-41d4-a716-446655440000",
+    "document_type": 1,
+    "file_name": "employee_passport.pdf",
+    "file_format": "pdf",
+    "file_size": 2048,
+    "description": "Employee passport copy",
+    "expiration_date": "2028-06-15",
+    "notes": "Renewal reminder set"
+}
+```
+
+**Success Response (201 Created):** Created document object
+
+**Validation:**
+- Cannot use an inactive document type
+- `file_format` is auto-lowercased
+- `uploaded_by` is automatically set to the current user
+
+##### Get Document Details
+
+**Endpoint:** `GET /api/v1/documents/{uuid}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):**
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "employee": "550e8400-e29b-41d4-a716-446655440000",
+    "employee_name": "أحمد محمد علي حسن",
+    "document_type": 1,
+    "document_type_detail": {
+        "id": 1,
+        "name": "ID Card"
+    },
+    "file_name": "employee_id.pdf",
+    "file_format": "pdf",
+    "file_size": 1024,
+    "file_path": "/media/documents/employee_id.pdf",
+    "description": "National ID Card",
+    "expiration_date": "2027-01-01",
+    "is_expired": false,
+    "notes": null,
+    "is_active": true,
+    "uploaded_by": "550e8400-e29b-41d4-a716-446655440099",
+    "uploaded_by_name": "سوبر أدمن المدير العام",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+}
+```
+
+##### Update Document
+
+**Endpoint:** `PUT /api/v1/documents/{uuid}/` or `PATCH /api/v1/documents/{uuid}/`
+
+**Authentication:** Superuser required
+
+**Request Body:**
+```json
+{
+    "description": "Updated description",
+    "expiration_date": "2028-01-01",
+    "is_active": true
+}
+```
+
+**Success Response (200 OK):** Updated document object
+
+##### Delete (Soft Delete) Document
+
+**Endpoint:** `DELETE /api/v1/documents/{uuid}/`
+
+**Authentication:** Superuser required
+
+**Success Response (200 OK):**
+```json
+{
+    "detail": "Document deactivated successfully."
+}
+```
+
+---
+
+#### My Documents (Employee Self-Service)
+
+Endpoints for employees to view their own documents. Requires authentication.
+
+##### List My Documents
+
+**Endpoint:** `GET /api/v1/documents/my/`
+
+**Authentication:** Required (any authenticated user)
+
+**Success Response (200 OK):**
+```json
+[
+    {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "document_type": 1,
+        "document_type_name": "ID Card",
+        "file_name": "my_id.pdf",
+        "file_format": "pdf",
+        "file_size": 1024,
+        "file_path": "/media/documents/my_id.pdf",
+        "description": "My National ID Card",
+        "expiration_date": "2027-01-01",
+        "is_expired": false,
+        "created_at": "2024-01-01T00:00:00Z"
+    }
+]
+```
+
+**Notes:**
+- Only returns the authenticated employee's own documents
+- Only returns active documents
+- Ordered by creation date (newest first)
+
+##### Get My Document Detail
+
+**Endpoint:** `GET /api/v1/documents/my/{uuid}/`
+
+**Authentication:** Required (any authenticated user)
+
+**Success Response (200 OK):** Document object (same format as list)
+
+**Error Response (404 Not Found):**
+- If document doesn't exist
+- If document belongs to another employee
+- If document is inactive
+
+---
+
 ## Data Models
 
 ### City Model
@@ -974,6 +1298,36 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 | `name` | String | Yes | Job title name (max 100 chars), unique |
 | `description` | Text | No | Job description |
 | `is_active` | Boolean | No | Active status (default: true) |
+| `created_at` | DateTime | Auto | Record creation timestamp |
+| `updated_at` | DateTime | Auto | Last update timestamp |
+
+### DocumentType Model
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | Integer | Auto | Primary key |
+| `name` | String | Yes | Document type name (max 100 chars), unique |
+| `description` | Text | No | Document type description |
+| `is_active` | Boolean | No | Active status (default: true) |
+| `created_at` | DateTime | Auto | Record creation timestamp |
+| `updated_at` | DateTime | Auto | Last update timestamp |
+
+### Document Model
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | UUID | Auto | Primary key |
+| `employee` | UUID | Yes | Foreign key to Employee |
+| `document_type` | Integer | Yes | Foreign key to DocumentType |
+| `file_name` | String | Yes | Original file name (max 255 chars) |
+| `file_format` | String | Yes | File extension (max 20 chars), auto-lowercased |
+| `file_size` | Integer | Yes | File size in bytes |
+| `file_path` | File | No | Uploaded file (stored in 'documents/') |
+| `description` | Text | No | Document description |
+| `expiration_date` | Date | No | Document expiration date |
+| `notes` | Text | No | Additional notes |
+| `is_active` | Boolean | No | Active status (default: true) |
+| `uploaded_by` | UUID | Auto | Employee who uploaded the document |
 | `created_at` | DateTime | Auto | Record creation timestamp |
 | `updated_at` | DateTime | Auto | Last update timestamp |
 

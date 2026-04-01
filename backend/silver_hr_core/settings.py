@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'core',
     'employees',
     'permissions',
+    'documents',
 ]
 
 MIDDLEWARE = [
