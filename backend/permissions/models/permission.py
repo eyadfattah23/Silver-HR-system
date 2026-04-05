@@ -14,7 +14,7 @@ class Permission(models.Model):
     
     resource = models.CharField(max_length=50) # e.g. 'employees', 'documents', 'attendance', 'salary'
     action = models.CharField(max_length=50) # e.g. 'create', 'read', 'update', 'delete', 'approve', 'delegate'
-    is_delegatable = models.BooleanField(default=True) # Can this permission be delegated to others?
+    can_be_given = models.BooleanField(default=True) # Can this permission be delegated to others?
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

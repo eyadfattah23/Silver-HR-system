@@ -5,15 +5,13 @@ from .models import (
     RolePermission,
     EmployeeRole,
     EmployeeExtraPermission,
-    DelegationRight,
-    PermissionDelegation,
 )
 
 
 @admin.register(Permission)
 class PermissionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'code', 'name', 'resource', 'action', 'is_active']
-    list_filter = ['resource', 'action', 'is_active']
+    list_display = ['id', 'code', 'name', 'resource', 'action', 'can_be_given', 'is_active']
+    list_filter = ['resource', 'action', 'can_be_given', 'is_active']
     search_fields = ['code', 'name']
 
 
@@ -41,23 +39,7 @@ class EmployeeRoleAdmin(admin.ModelAdmin):
 
 @admin.register(EmployeeExtraPermission)
 class EmployeeExtraPermissionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'employee', 'permission', 'granted_at', 'expires_at']
-    list_filter = ['permission']
-    search_fields = ['employee__first_name', 'permission__name']
+    list_display = ['id', 'employee', 'permission', 'city', 'branch', 'department', 'granted_by', 'granted_at']
+    list_filter = ['permission', 'is_active']
+    search_fields = ['employee__first_name', 'permission__name', 'granted_by__first_name']
     raw_id_fields = ['employee', 'granted_by']
-
-
-@admin.register(DelegationRight)
-class DelegationRightAdmin(admin.ModelAdmin):
-    list_display = ['id', 'employee', 'can_delegate_permission', 'is_active', 'granted_at']
-    list_filter = ['is_active']
-    search_fields = ['employee__first_name', 'can_delegate_permission__name']
-    raw_id_fields = ['employee', 'granted_by']
-
-
-@admin.register(PermissionDelegation)
-class PermissionDelegationAdmin(admin.ModelAdmin):
-    list_display = ['id', 'delegator', 'delegate', 'permission', 'is_active', 'expires_at']
-    list_filter = ['is_active']
-    search_fields = ['delegator__first_name', 'delegate__first_name', 'permission__name']
-    raw_id_fields = ['delegator', 'delegate']

@@ -24,14 +24,10 @@ class Role(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    hierarchy_level = models.PositiveIntegerField(default=5)  # 1=highest (super_admin), 5=lowest (employee)
     is_system_role = models.BooleanField(default=False)  # True for roles like super_admin that cannot be deleted
     
     class Meta:
-        ordering = ['hierarchy_level', 'name']
-        indexes = [
-            models.Index(fields=['hierarchy_level']),
-        ]
+        ordering = ['name']
     
     def __str__(self):
         return self.name
@@ -279,47 +275,27 @@ class EmployeeExtraPermission(models.Model):
         help_text='If set, permission applies only to this department'
     )
     
-    # Reason and status
-    reason = models.TextField(
-        blank=True,
-        help_text='Why was this extra permission granted?'
-    )
+    # Status
     is_active = models.BooleanField(default=True)
-    
-    # Expiration (optional, for temporary permissions)
-    expires_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text='Optional expiration for temporary permissions'
-    )
     
     # Audit fields
     granted_by = models.ForeignKey(
         'employees.Employee',
         on_delete=models.PROTECT,
-        related_name='extra_permissions_granted'
+        related_name='extra_permissions_granted',
+        help_text='Employee who granted this permission (could be super admin or another employee with give_own permission)'
     )
     granted_at = models.DateTimeField(auto_now_add=True)
-    
-    revoked_by = models.ForeignKey(
-        'employees.Employee',
-        on_delete=models.SET_NULL,
-        related_name='extra_permissions_revoked',
-        null=True,
-        blank=True
-    )
-    revoked_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         verbose_name = 'Employee Extra Permission'
         verbose_name_plural = 'Employee Extra Permissions'
-        unique_together = ('employee', 'permission', 'city', 'branch', 'department')
+        unique_together = ('employee', 'permission')  # Only one record per employee-permission pair
         indexes = [
             models.Index(fields=['employee']),
             models.Index(fields=['permission']),
             models.Index(fields=['is_active']),
             models.Index(fields=['employee', 'is_active']),
-            models.Index(fields=['expires_at']),
         ]
     
     def __str__(self):
@@ -335,27 +311,6 @@ class EmployeeExtraPermission(models.Model):
         if self.city:
             return f" (City: {self.city.name})"
         return " (Global)"
-    
-    def revoke(self, revoked_by):
-        """Revoke this extra permission."""
-        from django.utils import timezone
-        self.is_active = False
-        self.revoked_by = revoked_by
-        self.revoked_at = timezone.now()
-        self.save()
-    
-    @property
-    def is_expired(self):
-        """Check if this permission has expired."""
-        if not self.expires_at:
-            return False
-        from django.utils import timezone
-        return timezone.now() > self.expires_at
-    
-    @property
-    def is_effective(self):
-        """Check if this permission is currently effective (active and not expired)."""
-        return self.is_active and not self.is_expired
     
     @property
     def scope_level(self):
