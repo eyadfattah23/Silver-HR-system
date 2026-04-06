@@ -10,6 +10,8 @@ Complete API reference for the Silver HR System backend.
 
 ### All Endpoints at a Glance
 
+> **Note:** Users with `is_superuser=True` bypass all permission checks and have full access to all endpoints.
+
 #### 🔐 Authentication (No auth required)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -22,83 +24,126 @@ Complete API reference for the Silver HR System backend.
 | GET | `/api/v1/employees/me/` | Get own profile |
 | POST | `/api/v1/auth/users/set_password/` | Change own password |
 
-#### 👔 Admin - Employee Management (`is_staff=true`)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/employees/` | List all employees |
-| POST | `/api/v1/employees/` | Create employee |
-| GET | `/api/v1/employees/{id}/` | Get employee |
-| PATCH | `/api/v1/employees/{id}/` | Update employee |
-| DELETE | `/api/v1/employees/{id}/` | Deactivate employee |
-| POST | `/api/v1/employees/{id}/activate/` | Reactivate employee |
-| POST | `/api/v1/employees/{id}/set-password/` | Reset employee password |
+#### 👔 Employee Management (`employees.view`, `employees.create`, `employees.update`, `employees.delete`)
+| Method | Endpoint | Description | Permission |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/employees/` | List all employees | `employees.view` |
+| POST | `/api/v1/employees/` | Create employee | `employees.create` |
+| GET | `/api/v1/employees/{id}/` | Get employee | `employees.view` |
+| PATCH | `/api/v1/employees/{id}/` | Update employee | `employees.update` |
+| DELETE | `/api/v1/employees/{id}/` | Deactivate employee | `employees.delete` |
+| POST | `/api/v1/employees/{id}/activate/` | Reactivate employee | `employees.update` |
+| POST | `/api/v1/employees/{id}/set-password/` | Reset employee password | `employees.update` |
 
-#### 👔 Admin - Job Titles (`is_staff=true`)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/employees/job-titles/` | List all job titles |
-| GET | `/api/v1/employees/job-titles/active/` | List active job titles |
-| POST | `/api/v1/employees/job-titles/` | Create job title |
-| GET | `/api/v1/employees/job-titles/{id}/` | Get job title |
-| PATCH | `/api/v1/employees/job-titles/{id}/` | Update job title |
-| DELETE | `/api/v1/employees/job-titles/{id}/` | Deactivate job title |
+#### 👔 Job Titles (`employees.view`, `employees.update`)
+| Method | Endpoint | Description | Permission |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/employees/job-titles/` | List all job titles | `employees.view` |
+| GET | `/api/v1/employees/job-titles/active/` | List active job titles | Authenticated |
+| POST | `/api/v1/employees/job-titles/` | Create job title | `employees.update` |
+| GET | `/api/v1/employees/job-titles/{id}/` | Get job title | `employees.view` |
+| PATCH | `/api/v1/employees/job-titles/{id}/` | Update job title | `employees.update` |
+| DELETE | `/api/v1/employees/job-titles/{id}/` | Deactivate job title | `employees.update` |
 
-#### 🏢 Superuser - Cities (`is_superuser=true`)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/core/cities/` | List all cities |
-| GET | `/api/v1/core/cities/active/` | List active cities |
-| POST | `/api/v1/core/cities/` | Create city |
-| GET | `/api/v1/core/cities/{id}/` | Get city |
-| PATCH | `/api/v1/core/cities/{id}/` | Update city |
-| DELETE | `/api/v1/core/cities/{id}/` | Deactivate city |
+#### 🏢 Core - Cities (`core.view`, `core.manage`)
+| Method | Endpoint | Description | Permission |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/core/cities/` | List all cities | `core.view` |
+| GET | `/api/v1/core/cities/active/` | List active cities | `core.view` |
+| POST | `/api/v1/core/cities/` | Create city | `core.manage` |
+| GET | `/api/v1/core/cities/{id}/` | Get city | `core.view` |
+| PATCH | `/api/v1/core/cities/{id}/` | Update city | `core.manage` |
+| DELETE | `/api/v1/core/cities/{id}/` | Deactivate city | `core.manage` |
 
-#### 🏢 Superuser - Branches (`is_superuser=true`)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/core/branches/` | List all branches |
-| GET | `/api/v1/core/branches/active/` | List active branches |
-| POST | `/api/v1/core/branches/` | Create branch |
-| GET | `/api/v1/core/branches/{id}/` | Get branch |
-| PATCH | `/api/v1/core/branches/{id}/` | Update branch |
-| DELETE | `/api/v1/core/branches/{id}/` | Deactivate branch |
+#### 🏢 Core - Branches (`core.view`, `core.manage`)
+| Method | Endpoint | Description | Permission |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/core/branches/` | List all branches | `core.view` |
+| GET | `/api/v1/core/branches/active/` | List active branches | `core.view` |
+| POST | `/api/v1/core/branches/` | Create branch | `core.manage` |
+| GET | `/api/v1/core/branches/{id}/` | Get branch | `core.view` |
+| PATCH | `/api/v1/core/branches/{id}/` | Update branch | `core.manage` |
+| DELETE | `/api/v1/core/branches/{id}/` | Deactivate branch | `core.manage` |
 
-#### 🏢 Superuser - Departments (`is_superuser=true`)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/core/departments/` | List all departments |
-| GET | `/api/v1/core/departments/active/` | List active departments |
-| POST | `/api/v1/core/departments/` | Create department |
-| GET | `/api/v1/core/departments/{id}/` | Get department |
-| PATCH | `/api/v1/core/departments/{id}/` | Update department |
-| DELETE | `/api/v1/core/departments/{id}/` | Deactivate department |
+#### 🏢 Core - Departments (`core.view`, `core.manage`)
+| Method | Endpoint | Description | Permission |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/core/departments/` | List all departments | `core.view` |
+| GET | `/api/v1/core/departments/active/` | List active departments | `core.view` |
+| POST | `/api/v1/core/departments/` | Create department | `core.manage` |
+| GET | `/api/v1/core/departments/{id}/` | Get department | `core.view` |
+| PATCH | `/api/v1/core/departments/{id}/` | Update department | `core.manage` |
+| DELETE | `/api/v1/core/departments/{id}/` | Deactivate department | `core.manage` |
 
-#### 📄 Superuser - Document Types (`is_superuser=true`)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/documents/types/` | List all document types |
-| GET | `/api/v1/documents/types/active/` | List active document types |
-| POST | `/api/v1/documents/types/` | Create document type |
-| GET | `/api/v1/documents/types/{id}/` | Get document type |
-| PATCH | `/api/v1/documents/types/{id}/` | Update document type |
-| DELETE | `/api/v1/documents/types/{id}/` | Deactivate document type |
+#### 📄 Document Types (`document_types.view`, `document_types.manage`)
+| Method | Endpoint | Description | Permission |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/documents/types/` | List all document types | `document_types.view` |
+| GET | `/api/v1/documents/types/active/` | List active document types | `document_types.view` |
+| POST | `/api/v1/documents/types/` | Create document type | `document_types.manage` |
+| GET | `/api/v1/documents/types/{id}/` | Get document type | `document_types.view` |
+| PATCH | `/api/v1/documents/types/{id}/` | Update document type | `document_types.manage` |
+| DELETE | `/api/v1/documents/types/{id}/` | Deactivate document type | `document_types.manage` |
 
-#### 📄 Superuser - Documents (`is_superuser=true`)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/documents/` | List all documents |
-| GET | `/api/v1/documents/active/` | List active documents |
-| POST | `/api/v1/documents/` | Create document |
-| GET | `/api/v1/documents/{uuid}/` | Get document |
-| PATCH | `/api/v1/documents/{uuid}/` | Update document |
-| DELETE | `/api/v1/documents/{uuid}/` | Deactivate document |
-| GET | `/api/v1/documents/employee/{uuid}/` | List employee's documents |
+#### 📄 Documents (`documents.view`, `documents.create`, `documents.update`, `documents.delete`)
+| Method | Endpoint | Description | Permission |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/documents/` | List all documents | `documents.view` |
+| GET | `/api/v1/documents/active/` | List active documents | `documents.view` |
+| POST | `/api/v1/documents/` | Create document | `documents.create` |
+| GET | `/api/v1/documents/{uuid}/` | Get document | `documents.view` |
+| PATCH | `/api/v1/documents/{uuid}/` | Update document | `documents.update` |
+| DELETE | `/api/v1/documents/{uuid}/` | Deactivate document | `documents.delete` |
+| GET | `/api/v1/documents/employee/{uuid}/` | List employee's documents | `documents.view` |
 
 #### 📄 Employee - My Documents (Any authenticated user)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/v1/documents/my/` | List own documents |
 | GET | `/api/v1/documents/my/{uuid}/` | Get own document detail |
+
+#### 🔑 Permissions Self-Service (Any authenticated user)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/permissions/my-permissions/` | Get own permissions |
+| GET | `/api/v1/permissions/my-roles/` | Get own roles |
+| GET | `/api/v1/permissions/giveable/` | Get permissions you can give |
+| POST | `/api/v1/permissions/give/` | Give permission to another user |
+
+#### 🔑 Permissions - Permissions List (`permissions.view`)
+| Method | Endpoint | Description | Permission |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/permissions/` | List all permissions | `permissions.view` |
+| GET | `/api/v1/permissions/{id}/` | Get permission details | `permissions.view` |
+
+#### 🔑 Permissions - Roles (`permissions.view_roles`, `permissions.manage_roles`)
+| Method | Endpoint | Description | Permission |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/permissions/roles/` | List all roles | `permissions.view_roles` |
+| POST | `/api/v1/permissions/roles/` | Create role | `permissions.manage_roles` |
+| GET | `/api/v1/permissions/roles/{id}/` | Get role details | `permissions.view_roles` |
+| PATCH | `/api/v1/permissions/roles/{id}/` | Update role | `permissions.manage_roles` |
+| DELETE | `/api/v1/permissions/roles/{id}/` | Delete/deactivate role | `permissions.manage_roles` |
+| POST | `/api/v1/permissions/roles/{id}/permissions/` | Add permission to role | `permissions.manage_roles` |
+| DELETE | `/api/v1/permissions/roles/{id}/permissions/{perm_id}/` | Remove permission from role | `permissions.manage_roles` |
+
+#### 🔑 Permissions - Employee Roles (`permissions.assign_roles`)
+| Method | Endpoint | Description | Permission |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/permissions/employee-roles/` | List role assignments | `permissions.assign_roles` |
+| POST | `/api/v1/permissions/employee-roles/` | Assign role to employee | `permissions.assign_roles` |
+| GET | `/api/v1/permissions/employee-roles/{id}/` | Get assignment details | `permissions.assign_roles` |
+| PATCH | `/api/v1/permissions/employee-roles/{id}/` | Update assignment | `permissions.assign_roles` |
+| DELETE | `/api/v1/permissions/employee-roles/{id}/` | Revoke role | `permissions.assign_roles` |
+
+#### 🔑 Permissions - Extra Permissions (`permissions.edit_employee`)
+| Method | Endpoint | Description | Permission |
+|--------|----------|-------------|------------|
+| GET | `/api/v1/permissions/extra-permissions/` | List extra permissions | `permissions.edit_employee` |
+| POST | `/api/v1/permissions/extra-permissions/` | Grant extra permission | `permissions.edit_employee` |
+| GET | `/api/v1/permissions/extra-permissions/{id}/` | Get extra permission details | `permissions.edit_employee` |
+| PATCH | `/api/v1/permissions/extra-permissions/{id}/` | Update extra permission | `permissions.edit_employee` |
+| DELETE | `/api/v1/permissions/extra-permissions/{id}/` | Revoke extra permission | `permissions.edit_employee` |
 
 ---
 
@@ -111,14 +156,20 @@ Complete API reference for the Silver HR System backend.
   - [Employee Self-Service](#employee-self-service)
   - [Admin Employee Management](#admin-employee-management)
   - [JobTitle Management](#jobtitle-management)
-  - [Core Management (Superuser Only)](#core-management-superuser-only)
+  - [Core Management](#core-management)
     - [City Management](#city-management)
     - [Branch Management](#branch-management)
     - [Department Management](#department-management)
   - [Documents Management](#documents-management)
-    - [Document Type Management (Superuser Only)](#document-type-management-superuser-only)
-    - [Document Management (Superuser Only)](#document-management-superuser-only)
+    - [Document Type Management](#document-type-management)
+    - [Document Management](#document-management)
     - [My Documents (Employee Self-Service)](#my-documents-employee-self-service)
+  - [Permissions Management](#permissions-management)
+    - [Permissions Self-Service](#permissions-self-service)
+    - [Permissions List](#permissions-list)
+    - [Role Management](#role-management)
+    - [Employee Role Assignment](#employee-role-assignment)
+    - [Extra Permission Management](#extra-permission-management)
 - [Data Models](#data-models)
 - [Error Handling](#error-handling)
 - [Examples](#examples)
@@ -143,13 +194,36 @@ Authorization: JWT <access_token>
 
 ### Permission Levels
 
-| Role | Permissions |
-|------|-------------|
-| **Unauthenticated** | Login only |
-| **Employee** | View own profile, change own password |
-| **Admin** (`is_staff=True`) | Full CRUD on all employees, job titles |
-| **Superuser** (`is_superuser=True`) | All admin permissions + City/Branch/Department management |
+The system uses **Role-Based Access Control (RBAC)** with scoped permissions. Users with `is_superuser=True` bypass all permission checks.
 
+| Level | Description |
+|-------|-------------|
+| **Unauthenticated** | Login only |
+| **Authenticated** | View own profile, change own password, view own documents |
+| **Permission-based** | Access based on assigned permissions (via roles or extra permissions) |
+| **Superuser** (`is_superuser=True`) | Full access to all endpoints, bypasses all permission checks |
+
+#### Common Permissions
+
+| Permission Code | Description |
+|-----------------|-------------|
+| `employees.view` | View employees |
+| `employees.create` | Create employees |
+| `employees.update` | Update employees |
+| `employees.delete` | Delete/deactivate employees |
+| `core.view` | View cities, branches, departments |
+| `core.manage` | Create/update/delete cities, branches, departments |
+| `documents.view` | View documents |
+| `documents.create` | Create documents |
+| `documents.update` | Update documents |
+| `documents.delete` | Delete documents |
+| `document_types.view` | View document types |
+| `document_types.manage` | Manage document types |
+| `permissions.view_roles` | View roles |
+| `permissions.manage_roles` | Create/update/delete roles |
+| `permissions.assign_roles` | Assign/revoke roles to employees |
+| `permissions.edit_employee` | Grant/revoke extra permissions |
+| `permissions.give_own` | Give own role permissions to others |
 ### Organizational Hierarchy
 
 ```
@@ -225,7 +299,7 @@ City (Cairo, Alexandria, ...)
 1. **Store tokens securely** - Use `httpOnly` cookies or secure storage
 2. **Include token in all requests** - Add `Authorization: JWT <access_token>` header
 3. **Handle 401 errors** - Redirect to login or attempt token refresh
-4. **Check permissions** - Use `/api/v1/employees/me/` response to check `is_staff` and `is_superuser`
+4. **Check permissions** - Use `/api/v1/permissions/my-permissions/` to get the user's effective permissions
 
 ```javascript
 // Example: Axios interceptor for auth
@@ -330,13 +404,13 @@ Change the current authenticated employee's password.
 
 ### Admin Employee Management
 
-All admin endpoints require `is_staff=True`.
+Employee management endpoints require `employees.*` permissions. Superusers have full access.
 
 #### List All Employees
 
 **Endpoint:** `GET /api/v1/employees/`
 
-**Authentication:** Admin required
+**Authentication:** Required (`employees.view` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -360,7 +434,7 @@ All admin endpoints require `is_staff=True`.
 
 **Endpoint:** `POST /api/v1/employees/`
 
-**Authentication:** Admin required
+**Authentication:** Required (`employees.create` permission or superuser)
 
 **Request Body:**
 ```json
@@ -419,7 +493,7 @@ All admin endpoints require `is_staff=True`.
 
 **Endpoint:** `GET /api/v1/employees/{id}/`
 
-**Authentication:** Admin required
+**Authentication:** Required (`employees.view` permission or superuser)
 
 **Success Response (200 OK):** Full employee object (see [Data Models](#employee-model))
 
@@ -434,7 +508,7 @@ All admin endpoints require `is_staff=True`.
 
 **Endpoint:** `PUT /api/v1/employees/{id}/` or `PATCH /api/v1/employees/{id}/`
 
-**Authentication:** Admin required
+**Authentication:** Required (`employees.update` permission or superuser)
 
 **Request Body (PATCH - partial update):**
 ```json
@@ -453,7 +527,7 @@ Deactivates an employee instead of deleting. Deactivated employees cannot log in
 
 **Endpoint:** `DELETE /api/v1/employees/{id}/`
 
-**Authentication:** Admin required
+**Authentication:** Required (`employees.delete` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -468,7 +542,7 @@ Reactivates a previously deactivated employee.
 
 **Endpoint:** `POST /api/v1/employees/{id}/activate/`
 
-**Authentication:** Admin required
+**Authentication:** Required (`employees.update` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -486,11 +560,11 @@ Reactivates a previously deactivated employee.
 
 #### Reset Employee Password (Admin)
 
-Admin can reset any employee's password without knowing the current password.
+Admins can reset any employee's password without knowing the current password.
 
 **Endpoint:** `POST /api/v1/employees/{id}/set-password/`
 
-**Authentication:** Admin required
+**Authentication:** Required (`employees.update` permission or superuser)
 
 **Request Body:**
 ```json
@@ -527,13 +601,13 @@ Admin can reset any employee's password without knowing the current password.
 
 ### JobTitle Management
 
-All JobTitle management endpoints require `is_staff=True`.
+JobTitle management requires `employees.view` for read and `employees.update` for write operations. Superusers have full access.
 
 #### List All Job Titles
 
 **Endpoint:** `GET /api/v1/employees/job-titles/`
 
-**Authentication:** Admin required
+**Authentication:** Required (`employees.view` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -553,7 +627,7 @@ All JobTitle management endpoints require `is_staff=True`.
 
 **Endpoint:** `GET /api/v1/employees/job-titles/active/`
 
-**Authentication:** Admin required
+**Authentication:** Required (any authenticated user)
 
 **Success Response (200 OK):** Array of active job titles (same format as above)
 
@@ -561,7 +635,7 @@ All JobTitle management endpoints require `is_staff=True`.
 
 **Endpoint:** `POST /api/v1/employees/job-titles/`
 
-**Authentication:** Admin required
+**Authentication:** Required (`employees.update` permission or superuser)
 
 **Request Body:**
 ```json
@@ -578,7 +652,7 @@ All JobTitle management endpoints require `is_staff=True`.
 
 **Endpoint:** `GET /api/v1/employees/job-titles/{id}/`
 
-**Authentication:** Admin required
+**Authentication:** Required (`employees.view` permission or superuser)
 
 **Success Response (200 OK):** Job title object
 
@@ -586,7 +660,7 @@ All JobTitle management endpoints require `is_staff=True`.
 
 **Endpoint:** `PUT /api/v1/employees/job-titles/{id}/` or `PATCH /api/v1/employees/job-titles/{id}/`
 
-**Authentication:** Admin required
+**Authentication:** Required (`employees.update` permission or superuser)
 
 **Request Body:**
 ```json
@@ -600,9 +674,9 @@ All JobTitle management endpoints require `is_staff=True`.
 
 ---
 
-### Core Management (Superuser Only)
+### Core Management
 
-All Core management endpoints (City, Branch, Department) require `is_superuser=True`.
+Core management endpoints (City, Branch, Department) require `core.view` for read and `core.manage` for write operations. Superusers have full access.
 These endpoints manage the organizational hierarchy: **City → Branch → Department → Employee**
 
 #### City Management
@@ -611,7 +685,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `GET /api/v1/core/cities/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.view` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -633,7 +707,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `GET /api/v1/core/cities/active/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.view` permission or superuser)
 
 **Success Response (200 OK):** Array of active cities (same format as above)
 
@@ -641,7 +715,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `POST /api/v1/core/cities/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.manage` permission or superuser)
 
 **Request Body:**
 ```json
@@ -662,7 +736,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `GET /api/v1/core/cities/{id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.view` permission or superuser)
 
 **Success Response (200 OK):** City object with branch count
 
@@ -670,7 +744,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `PUT /api/v1/core/cities/{id}/` or `PATCH /api/v1/core/cities/{id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.manage` permission or superuser)
 
 **Request Body:**
 ```json
@@ -686,7 +760,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `DELETE /api/v1/core/cities/{id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.manage` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -705,7 +779,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `GET /api/v1/core/branches/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.view` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -729,7 +803,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `GET /api/v1/core/branches/active/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.view` permission or superuser)
 
 **Success Response (200 OK):** Array of active branches
 
@@ -737,7 +811,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `POST /api/v1/core/branches/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.manage` permission or superuser)
 
 **Request Body:**
 ```json
@@ -759,7 +833,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `GET /api/v1/core/branches/{id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.view` permission or superuser)
 
 **Success Response (200 OK):** Branch object with city details and department count
 
@@ -767,7 +841,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `PUT /api/v1/core/branches/{id}/` or `PATCH /api/v1/core/branches/{id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.manage` permission or superuser)
 
 **Success Response (200 OK):** Updated branch object
 
@@ -775,7 +849,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `DELETE /api/v1/core/branches/{id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.manage` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -792,7 +866,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `GET /api/v1/core/departments/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.view` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -817,7 +891,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `GET /api/v1/core/departments/active/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.view` permission or superuser)
 
 **Success Response (200 OK):** Array of active departments
 
@@ -825,7 +899,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `POST /api/v1/core/departments/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.manage` permission or superuser)
 
 **Request Body:**
 ```json
@@ -848,7 +922,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `GET /api/v1/core/departments/{id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.view` permission or superuser)
 
 **Success Response (200 OK):** Department object with branch/city details and employee count
 
@@ -856,7 +930,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `PUT /api/v1/core/departments/{id}/` or `PATCH /api/v1/core/departments/{id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.manage` permission or superuser)
 
 **Success Response (200 OK):** Updated department object
 
@@ -864,7 +938,7 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 **Endpoint:** `DELETE /api/v1/core/departments/{id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`core.manage` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -879,15 +953,15 @@ These endpoints manage the organizational hierarchy: **City → Branch → Depar
 
 Manage employee documents such as ID cards, passports, contracts, etc.
 
-#### Document Type Management (Superuser Only)
+#### Document Type Management
 
-All Document Type endpoints require `is_superuser=True`.
+Document Type management requires `document_types.view` for read and `document_types.manage` for write operations. Superusers have full access.
 
 ##### List All Document Types
 
 **Endpoint:** `GET /api/v1/documents/types/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`document_types.view` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -907,7 +981,7 @@ All Document Type endpoints require `is_superuser=True`.
 
 **Endpoint:** `GET /api/v1/documents/types/active/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`document_types.view` permission or superuser)
 
 **Success Response (200 OK):** Array of active document types
 
@@ -915,7 +989,7 @@ All Document Type endpoints require `is_superuser=True`.
 
 **Endpoint:** `POST /api/v1/documents/types/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`document_types.manage` permission or superuser)
 
 **Request Body:**
 ```json
@@ -935,7 +1009,7 @@ All Document Type endpoints require `is_superuser=True`.
 
 **Endpoint:** `GET /api/v1/documents/types/{id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`document_types.view` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -954,7 +1028,7 @@ All Document Type endpoints require `is_superuser=True`.
 
 **Endpoint:** `PUT /api/v1/documents/types/{id}/` or `PATCH /api/v1/documents/types/{id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`document_types.manage` permission or superuser)
 
 **Success Response (200 OK):** Updated document type object
 
@@ -962,7 +1036,7 @@ All Document Type endpoints require `is_superuser=True`.
 
 **Endpoint:** `DELETE /api/v1/documents/types/{id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`document_types.manage` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -973,15 +1047,15 @@ All Document Type endpoints require `is_superuser=True`.
 
 ---
 
-#### Document Management (Superuser Only)
+#### Document Management
 
-All Document admin endpoints require `is_superuser=True`.
+Document management requires `documents.*` permissions. Superusers have full access.
 
 ##### List All Documents
 
 **Endpoint:** `GET /api/v1/documents/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`documents.view` permission or superuser)
 
 **Query Parameters:**
 | Parameter | Type | Description |
@@ -1013,7 +1087,7 @@ All Document admin endpoints require `is_superuser=True`.
 
 **Endpoint:** `GET /api/v1/documents/active/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`documents.view` permission or superuser)
 
 **Query Parameters:** Same as List All Documents
 
@@ -1023,7 +1097,7 @@ All Document admin endpoints require `is_superuser=True`.
 
 **Endpoint:** `GET /api/v1/documents/employee/{employee_id}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`documents.view` permission or superuser)
 
 **Success Response (200 OK):** Array of documents for the specified employee
 
@@ -1031,7 +1105,7 @@ All Document admin endpoints require `is_superuser=True`.
 
 **Endpoint:** `POST /api/v1/documents/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`documents.create` permission or superuser)
 
 **Request Body:**
 ```json
@@ -1058,7 +1132,7 @@ All Document admin endpoints require `is_superuser=True`.
 
 **Endpoint:** `GET /api/v1/documents/{uuid}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`documents.view` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -1091,7 +1165,7 @@ All Document admin endpoints require `is_superuser=True`.
 
 **Endpoint:** `PUT /api/v1/documents/{uuid}/` or `PATCH /api/v1/documents/{uuid}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`documents.update` permission or superuser)
 
 **Request Body:**
 ```json
@@ -1108,7 +1182,7 @@ All Document admin endpoints require `is_superuser=True`.
 
 **Endpoint:** `DELETE /api/v1/documents/{uuid}/`
 
-**Authentication:** Superuser required
+**Authentication:** Required (`documents.delete` permission or superuser)
 
 **Success Response (200 OK):**
 ```json
@@ -1165,6 +1239,478 @@ Endpoints for employees to view their own documents. Requires authentication.
 - If document doesn't exist
 - If document belongs to another employee
 - If document is inactive
+
+---
+
+### Permissions Management
+
+The permissions system provides Role-Based Access Control (RBAC) with scope support. For detailed documentation on the permissions system, see [PERMISSIONS.md](./PERMISSIONS.md).
+
+#### Permissions Self-Service
+
+Endpoints for employees to view their own permissions and share permissions with others.
+
+##### Get My Permissions
+
+**Endpoint:** `GET /api/v1/permissions/my-permissions/`
+
+**Authentication:** Required (any authenticated user)
+
+**Success Response (200 OK):**
+```json
+{
+    "permissions": [
+        {
+            "code": "employees.view",
+            "name": "View Employees",
+            "resource": "employees",
+            "action": "view",
+            "source": "role",
+            "role_name": "HR Manager",
+            "scope": {
+                "level": "city",
+                "city": {"id": "...", "name": "Cairo"}
+            }
+        }
+    ],
+    "by_resource": {
+        "employees": [...]
+    },
+    "is_superuser": false,
+    "total_count": 5
+}
+```
+
+##### Get My Roles
+
+**Endpoint:** `GET /api/v1/permissions/my-roles/`
+
+**Authentication:** Required (any authenticated user)
+
+**Success Response (200 OK):**
+```json
+{
+    "roles": [
+        {
+            "id": "550e8400-e29b-41d4-a716-446655440001",
+            "role_name": "HR Manager",
+            "scope": {
+                "level": "city",
+                "city": {"id": "...", "name": "Cairo"}
+            },
+            "granted_at": "2024-01-01T00:00:00Z"
+        }
+    ],
+    "total_count": 1
+}
+```
+
+##### Get Giveable Permissions
+
+Get permissions that the current user can share with others. Requires `permissions.give_own` permission.
+
+**Endpoint:** `GET /api/v1/permissions/giveable/`
+
+**Authentication:** Required (`permissions.give_own` permission)
+
+**Success Response (200 OK):**
+```json
+{
+    "permissions": [
+        {
+            "id": "...",
+            "code": "employees.view",
+            "name": "View Employees",
+            "can_be_given": true
+        }
+    ],
+    "can_give": true,
+    "total_count": 3
+}
+```
+
+**Error Response (403 Forbidden):** If user doesn't have `permissions.give_own` permission.
+
+##### Give Permission
+
+Share a permission from your role with another employee.
+
+**Endpoint:** `POST /api/v1/permissions/give/`
+
+**Authentication:** Required (`permissions.give_own` permission)
+
+**Request Body:**
+```json
+{
+    "employee_id": "550e8400-e29b-41d4-a716-446655440000",
+    "permission_id": "550e8400-e29b-41d4-a716-446655440001",
+    "city_id": "550e8400-e29b-41d4-a716-446655440002"
+}
+```
+
+**Success Response (201 Created):** Extra permission object
+
+**Error Responses:**
+- `400`: Permission not in user's roles, permission not giveable, or recipient already has permission
+- `403`: User doesn't have `permissions.give_own` permission
+
+---
+
+#### Permissions List
+
+List and view available permissions. Permissions are system-defined and cannot be created via API.
+
+##### List All Permissions
+
+**Endpoint:** `GET /api/v1/permissions/`
+
+**Authentication:** Required (`permissions.view` permission or superuser)
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `resource` | String | Filter by resource (e.g., `employees`) |
+| `action` | String | Filter by action (e.g., `view`) |
+| `can_be_given` | Boolean | Filter by giveable status |
+
+**Success Response (200 OK):**
+```json
+[
+    {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "code": "employees.view",
+        "name": "View Employees",
+        "resource": "employees",
+        "action": "view",
+        "can_be_given": true
+    }
+]
+```
+
+##### Get Permission Details
+
+**Endpoint:** `GET /api/v1/permissions/{id}/`
+
+**Authentication:** Required (`permissions.view` permission or superuser)
+
+**Success Response (200 OK):**
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "code": "employees.view",
+    "name": "View Employees",
+    "description": "Allows viewing employee records",
+    "resource": "employees",
+    "action": "view",
+    "can_be_given": true
+}
+```
+
+---
+
+#### Role Management
+
+Manage roles which group permissions together.
+
+##### List All Roles
+
+**Endpoint:** `GET /api/v1/permissions/roles/`
+
+**Authentication:** Required (`permissions.view_roles` permission or superuser)
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `is_active` | Boolean | Filter by active status |
+| `is_system_role` | Boolean | Filter system roles |
+
+**Success Response (200 OK):**
+```json
+[
+    {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "name": "HR Manager",
+        "description": "Human Resources Manager",
+        "is_system_role": false,
+        "is_active": true,
+        "permission_count": 5
+    }
+]
+```
+
+##### Create Role
+
+**Endpoint:** `POST /api/v1/permissions/roles/`
+
+**Authentication:** Required (`permissions.manage_roles` permission or superuser)
+
+**Request Body:**
+```json
+{
+    "name": "Sales Manager",
+    "description": "Sales department manager role",
+    "permissions": [
+        {"permission_id": "550e8400-e29b-41d4-a716-446655440001"},
+        {"permission_id": "550e8400-e29b-41d4-a716-446655440002"}
+    ]
+}
+```
+
+**Success Response (201 Created):** Role object with permissions
+
+##### Get Role Details
+
+**Endpoint:** `GET /api/v1/permissions/roles/{id}/`
+
+**Authentication:** Required (`permissions.view_roles` permission or superuser)
+
+**Success Response (200 OK):**
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "name": "HR Manager",
+    "description": "Human Resources Manager",
+    "is_system_role": false,
+    "is_active": true,
+    "permissions": [
+        {
+            "id": "...",
+            "code": "employees.view",
+            "name": "View Employees"
+        }
+    ]
+}
+```
+
+##### Update Role
+
+**Endpoint:** `PUT /api/v1/permissions/roles/{id}/` or `PATCH /api/v1/permissions/roles/{id}/`
+
+**Authentication:** Required (`permissions.manage_roles` permission or superuser)
+
+**Success Response (200 OK):** Updated role object
+
+##### Delete Role
+
+**Endpoint:** `DELETE /api/v1/permissions/roles/{id}/`
+
+**Authentication:** Required (`permissions.manage_roles` permission or superuser)
+
+**Success Response (200 OK):**
+```json
+{
+    "message": "Role deactivated successfully"
+}
+```
+
+**Error Response (400):** Cannot delete role with active employee assignments
+
+##### Add Permission to Role
+
+**Endpoint:** `POST /api/v1/permissions/roles/{id}/permissions/`
+
+**Authentication:** Required (`permissions.manage_roles` permission or superuser)
+
+**Request Body:**
+```json
+{
+    "permission_id": "550e8400-e29b-41d4-a716-446655440001"
+}
+```
+
+**Success Response (201 Created):** Role object with updated permissions
+
+##### Remove Permission from Role
+
+**Endpoint:** `DELETE /api/v1/permissions/roles/{id}/permissions/{permission_id}/`
+
+**Authentication:** Required (`permissions.manage_roles` permission or superuser)
+
+**Success Response (200 OK):** Role object with updated permissions
+
+---
+
+#### Employee Role Assignment
+
+Assign and manage roles for employees.
+
+##### List Employee Roles
+
+**Endpoint:** `GET /api/v1/permissions/employee-roles/`
+
+**Authentication:** Required (`permissions.assign_roles` permission or superuser)
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `employee` | UUID | Filter by employee |
+| `role` | UUID | Filter by role |
+| `is_active` | Boolean | Filter by active status |
+
+**Success Response (200 OK):**
+```json
+[
+    {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "employee_id": "...",
+        "employee_name": "أحمد محمد علي حسن",
+        "employee_email": "ahmed@example.com",
+        "role_id": "...",
+        "role_name": "HR Manager",
+        "city_name": "Cairo",
+        "branch_name": null,
+        "department_name": null,
+        "scope_level": "city",
+        "is_active": true,
+        "granted_at": "2024-01-01T00:00:00Z"
+    }
+]
+```
+
+##### Assign Role to Employee
+
+**Endpoint:** `POST /api/v1/permissions/employee-roles/`
+
+**Authentication:** Required (`permissions.assign_roles` permission or superuser)
+
+**Request Body:**
+```json
+{
+    "employee_id": "550e8400-e29b-41d4-a716-446655440000",
+    "role_id": "550e8400-e29b-41d4-a716-446655440001",
+    "city_id": "550e8400-e29b-41d4-a716-446655440002",
+    "branch_id": null,
+    "department_id": null
+}
+```
+
+**Success Response (201 Created):** Employee role assignment object
+
+##### Get Employee Role Details
+
+**Endpoint:** `GET /api/v1/permissions/employee-roles/{id}/`
+
+**Authentication:** Required (`permissions.assign_roles` permission or superuser)
+
+**Success Response (200 OK):** Full employee role object
+
+##### Update Employee Role
+
+**Endpoint:** `PATCH /api/v1/permissions/employee-roles/{id}/`
+
+**Authentication:** Required (`permissions.assign_roles` permission or superuser)
+
+**Request Body:**
+```json
+{
+    "city_id": "550e8400-e29b-41d4-a716-446655440003",
+    "is_active": true
+}
+```
+
+**Success Response (200 OK):** Updated employee role object
+
+##### Revoke Employee Role
+
+**Endpoint:** `DELETE /api/v1/permissions/employee-roles/{id}/`
+
+**Authentication:** Required (`permissions.assign_roles` permission or superuser)
+
+**Success Response (200 OK):**
+```json
+{
+    "message": "Role assignment revoked successfully"
+}
+```
+
+---
+
+#### Extra Permission Management
+
+Grant individual permissions to employees outside of their roles.
+
+##### List Extra Permissions
+
+**Endpoint:** `GET /api/v1/permissions/extra-permissions/`
+
+**Authentication:** Required (`permissions.edit_employee` permission or superuser)
+
+**Query Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `employee` | UUID | Filter by employee |
+| `permission_code` | String | Filter by permission code |
+
+**Success Response (200 OK):**
+```json
+[
+    {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "employee_id": "...",
+        "employee_email": "ahmed@example.com",
+        "permission_id": "...",
+        "permission_code": "employees.view",
+        "city_name": "Cairo",
+        "scope_level": "city",
+        "is_active": true,
+        "granted_at": "2024-01-01T00:00:00Z"
+    }
+]
+```
+
+##### Grant Extra Permission
+
+**Endpoint:** `POST /api/v1/permissions/extra-permissions/`
+
+**Authentication:** Required (`permissions.edit_employee` permission or superuser)
+
+**Request Body:**
+```json
+{
+    "employee_id": "550e8400-e29b-41d4-a716-446655440000",
+    "permission_id": "550e8400-e29b-41d4-a716-446655440001",
+    "city_id": "550e8400-e29b-41d4-a716-446655440002"
+}
+```
+
+**Success Response (201 Created):** Extra permission object
+
+##### Get Extra Permission Details
+
+**Endpoint:** `GET /api/v1/permissions/extra-permissions/{id}/`
+
+**Authentication:** Required (`permissions.edit_employee` permission or superuser)
+
+**Success Response (200 OK):** Full extra permission object
+
+##### Update Extra Permission
+
+**Endpoint:** `PATCH /api/v1/permissions/extra-permissions/{id}/`
+
+**Authentication:** Required (`permissions.edit_employee` permission or superuser)
+
+**Request Body:**
+```json
+{
+    "city_id": "550e8400-e29b-41d4-a716-446655440003",
+    "is_active": true
+}
+```
+
+**Success Response (200 OK):** Updated extra permission object
+
+##### Revoke Extra Permission
+
+**Endpoint:** `DELETE /api/v1/permissions/extra-permissions/{id}/`
+
+**Authentication:** Required (`permissions.edit_employee` permission or superuser)
+
+**Success Response (200 OK):**
+```json
+{
+    "message": "Extra permission revoked successfully"
+}
+```
 
 ---
 
@@ -1330,6 +1876,69 @@ Endpoints for employees to view their own documents. Requires authentication.
 | `uploaded_by` | UUID | Auto | Employee who uploaded the document |
 | `created_at` | DateTime | Auto | Record creation timestamp |
 | `updated_at` | DateTime | Auto | Last update timestamp |
+
+### Permission Model
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | UUID | Auto | Primary key |
+| `code` | String | Yes | Unique permission code (e.g., `employees.view`) |
+| `name` | String | Yes | Human-readable name |
+| `description` | Text | No | Permission description |
+| `resource` | String | Yes | The resource being protected |
+| `action` | String | Yes | The action (view, create, update, delete) |
+| `can_be_given` | Boolean | No | Can be delegated via give_own (default: true) |
+
+### Role Model
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | UUID | Auto | Primary key |
+| `name` | String | Yes | Role name, unique |
+| `description` | Text | No | Role description |
+| `is_system_role` | Boolean | No | Protected system role (default: false) |
+| `is_active` | Boolean | No | Active status (default: true) |
+
+### EmployeeRole Model
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | UUID | Auto | Primary key |
+| `employee` | UUID | Yes | Foreign key to Employee |
+| `role` | UUID | Yes | Foreign key to Role |
+| `city` | UUID | No | Scope to specific city |
+| `branch` | UUID | No | Scope to specific branch |
+| `department` | UUID | No | Scope to specific department |
+| `is_active` | Boolean | No | Active status (default: true) |
+| `granted_by` | UUID | Auto | Who assigned this role |
+| `granted_at` | DateTime | Auto | When assigned |
+| `revoked_by` | UUID | Auto | Who revoked (if revoked) |
+| `revoked_at` | DateTime | Auto | When revoked (if revoked) |
+
+### EmployeeExtraPermission Model
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | UUID | Auto | Primary key |
+| `employee` | UUID | Yes | Foreign key to Employee |
+| `permission` | UUID | Yes | Foreign key to Permission |
+| `city` | UUID | No | Scope to specific city |
+| `branch` | UUID | No | Scope to specific branch |
+| `department` | UUID | No | Scope to specific department |
+| `is_active` | Boolean | No | Active status (default: true) |
+| `granted_by` | UUID | Auto | Who granted this permission |
+| `granted_at` | DateTime | Auto | When granted |
+
+### Scope Levels
+
+Permissions can be scoped to limit where they apply:
+
+| Level | Description |
+|-------|-------------|
+| **Global** | No scope restrictions (city, branch, department all null) |
+| **City** | Applies to all branches/departments in the city |
+| **Branch** | Applies to all departments in the branch |
+| **Department** | Applies only to the specific department |
 
 ### Egyptian National ID Format
 
