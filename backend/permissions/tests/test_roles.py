@@ -268,3 +268,107 @@ class RolePermissionTests(TestCase):
         )
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_reactivate_inactive_permission(self):
+        """Adding inactive permission should reactivate it."""
+        rp = RolePermission.objects.create(
+            role=self.test_role,
+            permission=self.test_perm,
+            is_active=False,
+        )
+        
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.post(
+            reverse('permissions:role-permission-add', kwargs={'pk': self.test_role.id}),
+            {'permission_id': str(self.test_perm.id)}
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        rp.refresh_from_db()
+        self.assertTrue(rp.is_active)
+
+
+class RoleFilterTests(TestCase):
+    """Tests for filtering roles."""
+    
+    def setUp(self):
+        self.client = APIClient()
+        self.superuser = create_test_superuser('01')
+        
+        self.active_role = Role.objects.create(
+            name='Active Role',
+            is_active=True,
+        )
+        self.inactive_role = Role.objects.create(
+            name='Inactive Role',
+            is_active=False,
+        )
+        self.system_role = Role.objects.create(
+            name='System Role',
+            is_system_role=True,
+        )
+    
+    def test_filter_by_is_active_true(self):
+        """Should filter roles by is_active=true."""
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.get(
+            reverse('permissions:role-list'),
+            {'is_active': 'true'}
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for role in response.data:
+            self.assertTrue(role['is_active'])
+    
+    def test_filter_by_is_active_false(self):
+        """Should filter roles by is_active=false."""
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.get(
+            reverse('permissions:role-list'),
+            {'is_active': 'false'}
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for role in response.data:
+            self.assertFalse(role['is_active'])
+    
+    def test_filter_by_is_system_role(self):
+        """Should filter roles by is_system_role."""
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.get(
+            reverse('permissions:role-list'),
+            {'is_system_role': 'true'}
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for role in response.data:
+            self.assertTrue(role['is_system_role'])
+
+
+class RoleDeleteConstraintsTests(TestCase):
+    """Tests for role deletion constraints."""
+    
+    def setUp(self):
+        self.client = APIClient()
+        self.superuser = create_test_superuser('01')
+        self.user = create_test_user('02')
+        
+        self.role_with_assignment = Role.objects.create(
+            name='Role With Assignment',
+        )
+        
+        EmployeeRole.objects.create(
+            employee=self.user,
+            role=self.role_with_assignment,
+            granted_by=self.superuser,
+        )
+    
+    def test_cannot_delete_role_with_active_assignments(self):
+        """Should not be able to delete a role with active assignments."""
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.delete(
+            reverse('permissions:role-detail', kwargs={'pk': self.role_with_assignment.id})
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(Role.objects.filter(id=self.role_with_assignment.id).exists())

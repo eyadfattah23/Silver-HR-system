@@ -528,3 +528,150 @@ The permission system is designed to be simple yet flexible:
 - **Extra permissions** allow individual grants
 - **Scopes** limit where permissions apply
 - **Give own** allows controlled delegation without complexity
+
+---
+
+## Utility Functions
+
+The `permissions/utils.py` module provides helper functions for checking permissions in application code.
+
+### `has_permission(user, permission_code, city=None, branch=None, department=None)`
+
+Check if a user has a specific permission, optionally within a scope.
+
+```python
+from permissions.utils import has_permission
+
+# Check global permission
+if has_permission(user, 'employees.view'):
+    # User can view employees
+
+# Check scoped permission
+if has_permission(user, 'employees.update', branch=some_branch):
+    # User can update employees in this branch
+```
+
+**Logic:**
+1. Superusers always return `True`
+2. Check permissions from roles (via `EmployeeRole` → `Role` → `RolePermission`)
+3. Check extra permissions (via `EmployeeExtraPermission`)
+4. Apply scope filtering using `applies_to()`
+
+### `get_user_permissions(user, city=None, branch=None, department=None)`
+
+Get all permission information for a user, optionally filtered by scope. Returns a list of dicts with permission details plus source information.
+
+```python
+from permissions.utils import get_user_permissions
+
+perms = get_user_permissions(user)
+
+# Returns list like:
+# [
+#     {
+#         'code': 'employees.view',
+#         'name': 'View Employees',
+#         'resource': 'employees',
+#         'action': 'view',
+#         'source': 'role',
+#         'role_name': 'HR Manager',
+#         'scope': {'level': 'city', 'city': {...}}
+#     },
+#     ...
+# ]
+```
+
+### `get_user_roles(user, city=None, branch=None, department=None)`
+
+Get all active role assignments for a user, optionally filtered by scope.
+
+```python
+from permissions.utils import get_user_roles
+
+roles = get_user_roles(user)
+
+# Returns list like:
+# [
+#     {
+#         'id': 'uuid',
+#         'role_name': 'HR Manager',
+#         'scope': {'level': 'city', 'city': {...}},
+#         'granted_at': '2024-01-15T...',
+#     },
+#     ...
+# ]
+```
+
+### `get_giveable_permissions(user, city=None, branch=None, department=None)`
+
+Get permissions that the user can delegate to others.
+
+**Rules:**
+- Superusers can give all permissions marked `can_be_given=True`
+- Regular users can only give permissions they possess via roles AND are marked `can_be_given=True`
+
+```python
+from permissions.utils import get_giveable_permissions
+
+giveable = get_giveable_permissions(user)
+# Returns queryset of Permission objects
+```
+
+---
+
+## Permission Codes Reference
+
+The following permission codes control access to the permissions system itself:
+
+| Code | Description |
+|------|-------------|
+| `permissions.view_roles` | View roles and their permissions |
+| `permissions.manage_roles` | Create, update, delete roles |
+| `permissions.assign_roles` | Assign/revoke roles to employees |
+| `permissions.edit_employee` | Grant/revoke extra permissions |
+| `permissions.give_own` | Share own role permissions with others |
+
+---
+
+## Testing
+
+The permissions app has comprehensive test coverage:
+
+| Test File | Description |
+|-----------|-------------|
+| `test_permissions.py` | Permission list/detail view tests |
+| `test_roles.py` | Role CRUD, filtering, and constraint tests |
+| `test_employee_roles.py` | Role assignment, scoping, and filtering tests |
+| `test_self_service.py` | My permissions/roles and give permission tests |
+| `test_utils.py` | Utility function unit tests |
+| `test_models.py` | Model method tests (`applies_to`, `scope_level`, etc.) |
+
+### Running Tests
+
+```bash
+# Run all permissions tests
+python manage.py test permissions
+
+# Run with verbosity
+python manage.py test permissions --verbosity=2
+
+# Run specific test file
+python manage.py test permissions.tests.test_roles
+
+# Run specific test class
+python manage.py test permissions.tests.test_roles.RolePermissionTests
+```
+
+### Test Coverage Summary
+
+- **99 tests total** covering:
+  - Permission list/detail endpoints
+  - Role CRUD operations
+  - Role permission management (add/remove)
+  - Employee role assignments with scoping
+  - Extra permission grants
+  - Self-service endpoints (my-permissions, my-roles, giveable)
+  - Utility functions (has_permission, get_user_permissions, etc.)
+  - Model methods (applies_to, scope_level, revoke)
+  - Filter and query parameter handling
+  - Error cases and edge conditions

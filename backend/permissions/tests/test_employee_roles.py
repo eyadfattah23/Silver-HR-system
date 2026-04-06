@@ -129,6 +129,26 @@ class EmployeeRoleListCreateTests(TestCase):
         )
         self.assertEqual(employee_role.branch, self.branch)
     
+    def test_superuser_can_assign_role_with_department_scope(self):
+        """Superuser should be able to assign a role with department scope."""
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.post(
+            reverse('permissions:employee-role-list'),
+            {
+                'employee_id': str(self.target_user.id),
+                'role_id': str(self.test_role.id),
+                'department_id': str(self.department.id),
+            },
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        employee_role = EmployeeRole.objects.get(
+            employee=self.target_user,
+            role=self.test_role,
+        )
+        self.assertEqual(employee_role.department, self.department)
+    
     def test_regular_user_cannot_assign_roles(self):
         """Regular user without permission cannot assign roles."""
         self.client.force_authenticate(user=self.regular_user)
@@ -244,4 +264,129 @@ class EmployeeRoleDetailTests(TestCase):
         )
         
         # Due to NULL handling in SQL, this creates a new record
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+
+class EmployeeRoleFilterTests(TestCase):
+    """Tests for filtering employee roles."""
+    
+    def setUp(self):
+        self.client = APIClient()
+        
+        self.superuser = create_test_superuser('01')
+        self.user1 = create_test_user('02', first_name='User1')
+        self.user2 = create_test_user('03', first_name='User2')
+        
+        self.role1 = Role.objects.create(name='Role One')
+        self.role2 = Role.objects.create(name='Role Two')
+        
+        # Create assignments
+        self.er1 = EmployeeRole.objects.create(
+            employee=self.user1,
+            role=self.role1,
+            granted_by=self.superuser,
+        )
+        self.er2 = EmployeeRole.objects.create(
+            employee=self.user2,
+            role=self.role2,
+            granted_by=self.superuser,
+        )
+        self.er3_inactive = EmployeeRole.objects.create(
+            employee=self.user1,
+            role=self.role2,
+            granted_by=self.superuser,
+            is_active=False,
+        )
+    
+    def test_filter_by_role(self):
+        """Should be able to filter employee roles by role."""
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.get(
+            reverse('permissions:employee-role-list'),
+            {'role': str(self.role1.id)}
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for item in response.data:
+            self.assertEqual(item['role_name'], 'Role One')
+    
+    def test_filter_by_is_active_true(self):
+        """Should be able to filter active employee roles."""
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.get(
+            reverse('permissions:employee-role-list'),
+            {'is_active': 'true'}
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for item in response.data:
+            self.assertTrue(item['is_active'])
+    
+    def test_filter_by_is_active_false(self):
+        """Should be able to filter inactive employee roles."""
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.get(
+            reverse('permissions:employee-role-list'),
+            {'is_active': 'false'}
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for item in response.data:
+            self.assertFalse(item['is_active'])
+
+
+class UserWithAssignRolesPermissionTests(TestCase):
+    """Tests for users with assign_roles permission."""
+    
+    def setUp(self):
+        self.client = APIClient()
+        
+        self.superuser = create_test_superuser('01')
+        self.manager = create_test_user('02', first_name='Manager')
+        self.target_user = create_test_user('03', first_name='Target')
+        
+        # Create permissions
+        self.assign_roles_perm, _ = Permission.objects.get_or_create(
+            code='permissions.assign_roles',
+            defaults={
+                'name': 'Assign Roles',
+                'resource': 'permissions',
+                'action': 'assign_roles',
+                'can_be_given': True,
+            }
+        )
+        
+        # Create manager role with assign_roles permission
+        self.manager_role = Role.objects.create(name='Manager Role')
+        RolePermission.objects.create(role=self.manager_role, permission=self.assign_roles_perm)
+        
+        # Assign manager role
+        EmployeeRole.objects.create(
+            employee=self.manager,
+            role=self.manager_role,
+            granted_by=self.superuser,
+        )
+        
+        # Create target role to assign
+        self.target_role = Role.objects.create(name='Target Role')
+    
+    def test_user_with_assign_roles_can_list(self):
+        """User with assign_roles permission can list employee roles."""
+        self.client.force_authenticate(user=self.manager)
+        response = self.client.get(reverse('permissions:employee-role-list'))
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+    
+    def test_user_with_assign_roles_can_assign(self):
+        """User with assign_roles permission can assign roles."""
+        self.client.force_authenticate(user=self.manager)
+        response = self.client.post(
+            reverse('permissions:employee-role-list'),
+            {
+                'employee_id': str(self.target_user.id),
+                'role_id': str(self.target_role.id),
+            },
+            format='json'
+        )
+        
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

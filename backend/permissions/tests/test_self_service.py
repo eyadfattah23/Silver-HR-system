@@ -423,3 +423,78 @@ class ExtraPermissionTests(TestCase):
         # List view uses compact serializer with employee_email
         for item in response.data:
             self.assertEqual(item['employee_email'], self.target_user.email)
+    
+    def test_superuser_can_create_extra_permission(self):
+        """Superuser should be able to create extra permissions."""
+        another_perm, _ = Permission.objects.get_or_create(
+            code='test.create',
+            defaults={
+                'name': 'Create Test',
+                'resource': 'test',
+                'action': 'create',
+                'can_be_given': True,
+            }
+        )
+        
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.post(
+            reverse('permissions:extra-permission-list'),
+            {
+                'employee_id': str(self.target_user.id),
+                'permission_id': str(another_perm.id),
+            },
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(
+            EmployeeExtraPermission.objects.filter(
+                employee=self.target_user,
+                permission=another_perm,
+            ).exists()
+        )
+    
+    def test_superuser_can_update_extra_permission(self):
+        """Superuser should be able to update extra permission scope."""
+        city = City.objects.create(name='Test City', code='TST2')
+        
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.patch(
+            reverse('permissions:extra-permission-detail', kwargs={'pk': self.extra_perm.id}),
+            {
+                'city_id': str(city.id),
+            },
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.extra_perm.refresh_from_db()
+        self.assertEqual(self.extra_perm.city, city)
+    
+    def test_filter_by_permission_code(self):
+        """Should be able to filter extra permissions by permission code."""
+        self.client.force_authenticate(user=self.superuser)
+        response = self.client.get(
+            reverse('permissions:extra-permission-list'),
+            {'permission_code': 'test.view'}
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for item in response.data:
+            self.assertEqual(item['permission_code'], 'test.view')
+    
+    def test_regular_user_cannot_create_extra_permission(self):
+        """Regular user without permission cannot create extra permissions."""
+        regular_user = create_test_user('05', first_name='Regular')
+        
+        self.client.force_authenticate(user=regular_user)
+        response = self.client.post(
+            reverse('permissions:extra-permission-list'),
+            {
+                'employee_id': str(self.target_user.id),
+                'permission_id': str(self.test_perm.id),
+            },
+            format='json'
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
