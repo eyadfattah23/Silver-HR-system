@@ -3,14 +3,20 @@
 Custom views for Employee management.
 
 Permission Structure:
-- Normal employees: Can only view their own profile and change their password (via Djoser)
-- Admins: Full CRUD access to all employees via API
+- Normal employees: Can view their own profile (employees.view_own)
+- Users with employees.view: Can view employees (within their scope)
+- Users with employees.create: Can create employees
+- Users with employees.update: Can update employees (within their scope)
+- Users with employees.delete: Can deactivate employees (within their scope)
+- Superusers: Full access
 """
 
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
+
+from permissions.utils import has_permission
 
 from ..serializers import (
     EmployeeSerializer,
@@ -20,6 +26,35 @@ from ..serializers import (
 )
 
 Employee = get_user_model()
+
+
+class HasEmployeePermission(permissions.BasePermission):
+    """
+    Permission class for employee endpoints.
+    Maps HTTP methods to permission codes.
+    """
+    
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        if request.user.is_superuser:
+            return True
+        
+        # Map methods to permissions
+        method_permission_map = {
+            'GET': 'employees.view',
+            'POST': 'employees.create',
+            'PUT': 'employees.update',
+            'PATCH': 'employees.update',
+            'DELETE': 'employees.delete',
+        }
+        
+        required_permission = method_permission_map.get(request.method)
+        if not required_permission:
+            return False
+        
+        return has_permission(request.user, required_permission)
 
 
 # =============================================================================
@@ -46,13 +81,13 @@ class EmployeeMeView(generics.RetrieveAPIView):
 
 class EmployeeListCreateView(generics.ListCreateAPIView):
     """
-    Admin-only view.
+    View for listing and creating employees.
 
-    GET: List all employees
-    POST: Create a new employee
+    GET: List employees (requires employees.view)
+    POST: Create a new employee (requires employees.create)
     """
     queryset = Employee.objects.all().order_by('-created_at')
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasEmployeePermission]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -66,14 +101,14 @@ class EmployeeListCreateView(generics.ListCreateAPIView):
 
 class EmployeeDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
-    Admin-only view for managing individual employees.
+    View for managing individual employees.
 
-    GET: Retrieve employee details
-    PUT/PATCH: Update employee data
-    DELETE: Deactivate employee (soft delete by setting is_active=False)
+    GET: Retrieve employee details (requires employees.view)
+    PUT/PATCH: Update employee data (requires employees.update)
+    DELETE: Deactivate employee (requires employees.delete)
     """
     queryset = Employee.objects.all()
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasEmployeePermission]
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -94,13 +129,20 @@ class EmployeeDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class EmployeeActivateView(APIView):
     """
-    Admin-only view to reactivate a deactivated employee.
+    View to reactivate a deactivated employee.
 
-    POST: Activate employee
+    POST: Activate employee (requires employees.update)
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
+        # Check permission
+        if not request.user.is_superuser and not has_permission(request.user, 'employees.update'):
+            return Response(
+                {"detail": "You do not have permission to activate employees."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         try:
             employee = Employee.objects.get(pk=pk)
         except Employee.DoesNotExist:
@@ -120,14 +162,21 @@ class EmployeeActivateView(APIView):
 
 class EmployeeSetPasswordView(APIView):
     """
-    Admin-only view to reset an employee's password.
+    View to reset an employee's password.
 
-    POST: Set new password for employee
+    POST: Set new password for employee (requires employees.update)
     Body: {"new_password": "...", "re_new_password": "..."}
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
+        # Check permission
+        if not request.user.is_superuser and not has_permission(request.user, 'employees.update'):
+            return Response(
+                {"detail": "You do not have permission to reset employee passwords."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         try:
             employee = Employee.objects.get(pk=pk)
         except Employee.DoesNotExist:

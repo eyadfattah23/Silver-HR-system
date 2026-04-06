@@ -3,12 +3,18 @@
 Views for Document management.
 
 Permission Structure:
-- Superusers can manage all documents (CRUD)
-- Authenticated employees can view their own documents only
+- Users with documents.view: Can view all documents (within their scope)
+- Users with documents.create: Can create documents
+- Users with documents.update: Can update documents (within their scope)
+- Users with documents.delete: Can deactivate documents (within their scope)
+- Users with documents.view_own: Can view their own documents
+- Superusers: Full access
 """
 
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+
+from permissions.utils import has_permission, IsSuperUserOrHasPermission
 
 from ..models import Document
 from ..serializers import (
@@ -20,21 +26,43 @@ from ..serializers import (
 )
 
 
-class IsSuperUser(permissions.BasePermission):
-    """Permission class that only allows superusers."""
+class HasDocumentPermission(permissions.BasePermission):
+    """
+    Permission class for document endpoints.
+    Maps HTTP methods to permission codes.
+    """
     
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.is_superuser
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        if request.user.is_superuser:
+            return True
+        
+        # Map methods to permissions
+        method_permission_map = {
+            'GET': 'documents.view',
+            'POST': 'documents.create',
+            'PUT': 'documents.update',
+            'PATCH': 'documents.update',
+            'DELETE': 'documents.delete',
+        }
+        
+        required_permission = method_permission_map.get(request.method)
+        if not required_permission:
+            return False
+        
+        return has_permission(request.user, required_permission)
 
 
 class DocumentListCreateView(generics.ListCreateAPIView):
     """
-    Super admin-only view.
+    View for listing and creating documents.
 
-    GET: List all documents
-    POST: Create a new document
+    GET: List all documents (requires documents.view)
+    POST: Create a new document (requires documents.create)
     """
-    permission_classes = [IsSuperUser]
+    permission_classes = [HasDocumentPermission]
     
     def get_queryset(self):
         queryset = Document.objects.select_related(
@@ -66,16 +94,16 @@ class DocumentListCreateView(generics.ListCreateAPIView):
 
 class DocumentDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
-    Super admin-only view for managing individual documents.
+    View for managing individual documents.
 
-    GET: Retrieve document details
-    PUT/PATCH: Update document data
-    DELETE: Deactivate document (soft delete by setting is_active=False)
+    GET: Retrieve document details (requires documents.view)
+    PUT/PATCH: Update document data (requires documents.update)
+    DELETE: Deactivate document (requires documents.delete)
     """
     queryset = Document.objects.select_related(
         'employee', 'document_type', 'uploaded_by'
     )
-    permission_classes = [IsSuperUser]
+    permission_classes = [HasDocumentPermission]
     
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -127,11 +155,11 @@ class EmployeeDocumentDetailView(generics.RetrieveAPIView):
 
 class ActiveDocumentListView(generics.ListAPIView):
     """
-    Super admin-only view.
+    View for listing active documents.
 
-    GET: List only active documents
+    GET: List only active documents (requires documents.view)
     """
-    permission_classes = [IsSuperUser]
+    permission_classes = [HasDocumentPermission]
     serializer_class = DocumentListSerializer
     
     def get_queryset(self):
@@ -158,7 +186,8 @@ class EmployeeDocumentsView(generics.ListAPIView):
 
     GET: List all documents for a specific employee (by employee ID in URL)
     """
-    permission_classes = [IsSuperUser]
+    permission_classes = [IsSuperUserOrHasPermission]
+    required_permission = 'documents.view'
     serializer_class = DocumentListSerializer
     
     def get_queryset(self):

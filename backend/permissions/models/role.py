@@ -200,11 +200,19 @@ class EmployeeRole(models.Model):
     def applies_to(self, city=None, branch=None, department=None):
         """
         Check if this role assignment applies to the given scope.
+        
+        If no scope is provided (all None), returns True since we're just 
+        checking if the user has the permission at any scope level.
+        
         A global role applies everywhere.
         A city role applies to all branches/departments in that city.
         A branch role applies to all departments in that branch.
         A department role applies only to that department.
         """
+        # If no scope was requested, we're just checking if user has permission at any level
+        if city is None and branch is None and department is None:
+            return True
+        
         # Global role applies everywhere
         if not self.city and not self.branch and not self.department:
             return True
@@ -327,7 +335,14 @@ class EmployeeExtraPermission(models.Model):
         """
         Check if this extra permission applies to the given scope.
         Same logic as EmployeeRole.applies_to().
+        
+        If no scope is provided (all None), returns True since we're just 
+        checking if the user has the permission at any scope level.
         """
+        # If no scope was requested, we're just checking if user has permission at any level
+        if city is None and branch is None and department is None:
+            return True
+        
         # Global permission applies everywhere
         if not self.city and not self.branch and not self.department:
             return True

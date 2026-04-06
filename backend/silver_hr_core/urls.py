@@ -37,6 +37,9 @@ urlpatterns = [
 
     # Documents endpoints
     path('api/v1/documents/', include('documents.urls')),
+
+    # Permissions endpoints
+    path('api/v1/permissions/', include('permissions.urls')),
 ] + debug_toolbar_urls()
 
 

@@ -3,11 +3,15 @@
 Views for Branch management.
 
 Permission Structure:
-- Only superusers can manage branches (CRUD)
+- Users with core.view: Can view branches
+- Users with core.manage: Can create, update, delete branches
+- Superusers: Full access
 """
 
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+
+from permissions.utils import has_permission
 
 from ..models import Branch
 from ..serializers import (
@@ -17,22 +21,35 @@ from ..serializers import (
 )
 
 
-class IsSuperUser(permissions.BasePermission):
-    """Permission class that only allows superusers."""
+class HasCorePermission(permissions.BasePermission):
+    """
+    Permission class for core endpoints (cities, branches, departments).
+    """
     
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.is_superuser
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        if request.user.is_superuser:
+            return True
+        
+        # Safe methods require view permission
+        if request.method in permissions.SAFE_METHODS:
+            return has_permission(request.user, 'core.view')
+        
+        # Unsafe methods require manage permission
+        return has_permission(request.user, 'core.manage')
 
 
 class BranchListCreateView(generics.ListCreateAPIView):
     """
-    Super admin-only view.
+    View for listing and creating branches.
 
-    GET: List all branches
-    POST: Create a new branch
+    GET: List all branches (requires core.view)
+    POST: Create a new branch (requires core.manage)
     """
     queryset = Branch.objects.all().select_related('city').order_by('city__name', 'name')
-    permission_classes = [IsSuperUser]
+    permission_classes = [HasCorePermission]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -42,14 +59,14 @@ class BranchListCreateView(generics.ListCreateAPIView):
 
 class BranchDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
-    Super admin-only view for managing individual branches.
+    View for managing individual branches.
 
-    GET: Retrieve branch details
-    PUT/PATCH: Update branch data
-    DELETE: Deactivate branch (soft delete by setting is_active=False)
+    GET: Retrieve branch details (requires core.view)
+    PUT/PATCH: Update branch data (requires core.manage)
+    DELETE: Deactivate branch (requires core.manage)
     """
     queryset = Branch.objects.all().select_related('city')
-    permission_classes = [IsSuperUser]
+    permission_classes = [HasCorePermission]
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -69,10 +86,10 @@ class BranchDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class ActiveBranchListView(generics.ListAPIView):
     """
-    Super admin-only view.
+    View for listing active branches.
 
-    GET: List only active branches
+    GET: List only active branches (requires core.view)
     """
     queryset = Branch.objects.filter(is_active=True).select_related('city').order_by('city__name', 'name')
-    permission_classes = [IsSuperUser]
+    permission_classes = [HasCorePermission]
     serializer_class = BranchListSerializer

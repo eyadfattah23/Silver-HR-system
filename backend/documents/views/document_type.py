@@ -3,11 +3,15 @@
 Views for DocumentType management.
 
 Permission Structure:
-- Only superusers can manage document types (CRUD)
+- Users with document_types.view: Can view document types
+- Users with document_types.manage: Can create, update, delete document types
+- Superusers: Full access
 """
 
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+
+from permissions.utils import has_permission
 
 from ..models import DocumentType
 from ..serializers import (
@@ -17,22 +21,35 @@ from ..serializers import (
 )
 
 
-class IsSuperUser(permissions.BasePermission):
-    """Permission class that only allows superusers."""
+class HasDocumentTypePermission(permissions.BasePermission):
+    """
+    Permission class for document type endpoints.
+    """
     
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.is_superuser
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        if request.user.is_superuser:
+            return True
+        
+        # Safe methods require view permission
+        if request.method in permissions.SAFE_METHODS:
+            return has_permission(request.user, 'document_types.view')
+        
+        # Unsafe methods require manage permission
+        return has_permission(request.user, 'document_types.manage')
 
 
 class DocumentTypeListCreateView(generics.ListCreateAPIView):
     """
-    Super admin-only view.
+    View for listing and creating document types.
 
-    GET: List all document types
-    POST: Create a new document type
+    GET: List all document types (requires document_types.view)
+    POST: Create a new document type (requires document_types.manage)
     """
     queryset = DocumentType.objects.all().order_by('name')
-    permission_classes = [IsSuperUser]
+    permission_classes = [HasDocumentTypePermission]
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -42,14 +59,14 @@ class DocumentTypeListCreateView(generics.ListCreateAPIView):
 
 class DocumentTypeDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
-    Super admin-only view for managing individual document types.
+    View for managing individual document types.
 
-    GET: Retrieve document type details
-    PUT/PATCH: Update document type data
-    DELETE: Deactivate document type (soft delete by setting is_active=False)
+    GET: Retrieve document type details (requires document_types.view)
+    PUT/PATCH: Update document type data (requires document_types.manage)
+    DELETE: Deactivate document type (requires document_types.manage)
     """
     queryset = DocumentType.objects.all()
-    permission_classes = [IsSuperUser]
+    permission_classes = [HasDocumentTypePermission]
     
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -69,10 +86,10 @@ class DocumentTypeDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class ActiveDocumentTypeListView(generics.ListAPIView):
     """
-    Super admin-only view.
+    View for listing active document types.
 
-    GET: List only active document types
+    GET: List only active document types (requires document_types.view)
     """
     queryset = DocumentType.objects.filter(is_active=True).order_by('name')
-    permission_classes = [IsSuperUser]
+    permission_classes = [HasDocumentTypePermission]
     serializer_class = DocumentTypeListSerializer

@@ -37,6 +37,8 @@ The Silver HR permission system is a Role-Based Access Control (RBAC) system wit
 
 A permission represents an action that can be performed on a resource.
 
+> **Note**: Permissions are **system-defined** by the backend team and cannot be created or modified by admins. Admins can only link existing permissions to roles and employees.
+
 | Field | Description | Example |
 |-------|-------------|---------|
 | `code` | Unique identifier | `employees.view`, `documents.create` |
@@ -210,15 +212,15 @@ When Employee A gives a permission to Employee B:
 
 ## API Endpoints
 
-### Permissions Management (Super Admin Only)
+### Permissions (Read-Only)
+
+Permissions are **system-defined** and cannot be created, updated, or deleted via API.
+They are managed by the backend team and synced to the database via migrations.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/permissions/` | List all permissions |
-| POST | `/api/permissions/` | Create a new permission |
+| GET | `/api/permissions/` | List all available permissions |
 | GET | `/api/permissions/{id}/` | Get permission details |
-| PATCH | `/api/permissions/{id}/` | Update a permission |
-| DELETE | `/api/permissions/{id}/` | Delete a permission |
 
 ### Roles Management (Super Admin Only)
 
